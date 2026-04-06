@@ -1,0 +1,12 @@
+/home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/deps/serde-ccc71c2349461ef3.d: /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/build/serde-7e91f6ec9c52d87c/out/private.rs
+
+/home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/deps/libserde-ccc71c2349461ef3.rmeta: /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/build/serde-7e91f6ec9c52d87c/out/private.rs
+
+/home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/actuallypretending/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/build/serde-7e91f6ec9c52d87c/out/private.rs:
+
+# env-dep:OUT_DIR=/home/actuallypretending/shit_post/howfastwould/.worktrees/backend/backend/target/debug/build/serde-7e91f6ec9c52d87c/out

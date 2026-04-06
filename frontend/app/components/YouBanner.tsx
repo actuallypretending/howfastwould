@@ -15,8 +15,7 @@ export default function YouBanner({ problemId, onSolve, onGiveUp }: Props) {
   useEffect(() => {
     reset();
     start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problemId]);
+  }, [problemId, reset, start]);
 
   const handleSolve = () => {
     const ms = stop();

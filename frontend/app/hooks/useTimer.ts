@@ -1,5 +1,4 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type TimerState = "idle" | "running" | "stopped";
 
@@ -9,24 +8,24 @@ export function useTimer() {
   const startRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  const start = () => {
+  const start = useCallback(() => {
     startRef.current = Date.now();
     setState("running");
-  };
+  }, []);
 
-  const stop = (): number => {
+  const stop = useCallback((): number => {
     const ms = startRef.current ? Date.now() - startRef.current : 0;
     setState("stopped");
     setElapsedMs(ms);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     return ms;
-  };
+  }, []);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setState("idle");
     setElapsedMs(0);
     startRef.current = null;
-  };
+  }, []);
 
   useEffect(() => {
     if (state !== "running") return;

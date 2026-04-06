@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRace, fetchModels, fetchProblemResults, fetchRandomProblem } from "./lib/api";
 import { Model, Problem, RaceResultWithModel } from "./lib/types";
 import MemeCard from "./components/MemeCard";
@@ -16,6 +16,7 @@ export default function Home() {
   const [userResult, setUserResult] = useState<{ ms: number; gaveUp: boolean } | null>(null);
   const [memeTarget, setMemeTarget] = useState<RaceResultWithModel | null>(null);
   const [roast, setRoast] = useState("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadProblem = useCallback(async (p: Problem) => {
     setProblem(p);
@@ -35,6 +36,10 @@ export default function Home() {
     fetchModels().then(setModels);
   }, [loadRandom]);
 
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
   const handleRaceAgain = async () => {
     if (!problem || isRacing) return;
     setIsRacing(true);
@@ -42,12 +47,13 @@ export default function Home() {
       await createRace(problem.id);
       let attempts = 0;
       const prevCount = results.length;
-      const poll = setInterval(async () => {
+      pollRef.current = setInterval(async () => {
         const r = await fetchProblemResults(problem.id);
         setResults(r);
         attempts++;
         if (attempts > 30 || r.length > prevCount) {
-          clearInterval(poll);
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
           setIsRacing(false);
         }
       }, 3000);

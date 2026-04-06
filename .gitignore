@@ -1,2 +1,3 @@
 .superpowers/
 .worktrees/
+frontend/node_modules/\nfrontend/.next/\nfrontend/.env.local

@@ -26,9 +26,9 @@ pub struct Model {
     pub name: String,
     pub display_name: String,
     pub api_key_env: String,
-    pub is_active: bool,
-    pub is_new: bool,
-    pub is_human: bool,
+    pub is_active: i64,
+    pub is_new: i64,
+    pub is_human: i64,
     pub human_times: Option<String>,
     pub added_at: String,
 }

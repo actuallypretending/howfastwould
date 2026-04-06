@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let app = Router::new()
-        .nest("/", routes::router(pool.clone()))
+        .nest("/", routes::router(pool.clone(), cfg.clone()))
         .layer(CorsLayer::permissive());
 
     let addr = format!("0.0.0.0:{}", cfg.port);

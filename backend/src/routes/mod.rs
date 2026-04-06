@@ -14,9 +14,7 @@ pub struct AppState {
     pub runner: Arc<Runner>,
 }
 
-pub fn router(pool: SqlitePool) -> Router {
-    dotenvy::dotenv().ok();
-    let config = Arc::new(crate::config::Config::from_env().unwrap());
+pub fn router(pool: SqlitePool, config: Arc<Config>) -> Router {
     let runner = Arc::new(Runner::new(config.clone()));
     let state = AppState { pool, config, runner };
 

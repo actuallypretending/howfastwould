@@ -1,5 +1,6 @@
 use axum::{
     extract::{Path, State},
+    http::StatusCode,
     response::sse::{Event, Sse},
     Json,
 };
@@ -24,7 +25,7 @@ pub struct CreateRaceResponse {
 pub async fn create(
     State(state): State<AppState>,
     Json(body): Json<CreateRaceBody>,
-) -> Json<CreateRaceResponse> {
+) -> Result<Json<CreateRaceResponse>, StatusCode> {
     let race_id = Uuid::new_v4().to_string();
 
     let problem = sqlx::query_as!(
@@ -34,7 +35,9 @@ pub async fn create(
            test_cases as "test_cases!", source as "source!", cached_at as "cached_at!"
            FROM problems WHERE id = ?"#,
         body.problem_id
-    ).fetch_one(&state.pool).await.expect("problem not found");
+    ).fetch_optional(&state.pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
 
     let models = sqlx::query_as!(
         crate::models::Model,
@@ -70,7 +73,7 @@ pub async fn create(
             .execute(&pool).await.ok();
     });
 
-    Json(CreateRaceResponse { race_id })
+    Ok(Json(CreateRaceResponse { race_id }))
 }
 
 pub async fn stream(

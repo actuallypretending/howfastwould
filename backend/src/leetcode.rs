@@ -145,12 +145,13 @@ pub async fn get_random_cached(pool: &sqlx::SqlitePool) -> Result<Problem> {
 }
 
 pub async fn search_problems(pool: &sqlx::SqlitePool, q: &str) -> Result<Vec<Problem>> {
-    let pattern = format!("%{}%", q);
+    let escaped = q.replace('%', "\\%").replace('_', "\\_");
+    let pattern = format!("%{}%", escaped);
     sqlx::query_as!(Problem,
         r#"SELECT id as "id!", lc_id as "lc_id!", title as "title!", difficulty as "difficulty!",
            description as "description!", starter_code as "starter_code!",
            test_cases as "test_cases!", source as "source!", cached_at as "cached_at!"
-           FROM problems WHERE title LIKE ? OR CAST(lc_id AS TEXT) = ? OR difficulty = ?
+           FROM problems WHERE title LIKE ? ESCAPE '\\' OR CAST(lc_id AS TEXT) = ? OR difficulty = ?
            LIMIT 20"#,
         pattern, q, q
     ).fetch_all(pool).await.context("search failed")

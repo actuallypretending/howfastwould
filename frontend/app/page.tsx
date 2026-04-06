@@ -46,12 +46,15 @@ export default function Home() {
     try {
       await createRace(problem.id);
       let attempts = 0;
-      const prevCount = results.length;
+      let stableCount = 0;
+      let lastCount = results.length;
       pollRef.current = setInterval(async () => {
         const r = await fetchProblemResults(problem.id);
         setResults(r);
         attempts++;
-        if (attempts > 30 || r.length > prevCount) {
+        if (r.length > lastCount) { lastCount = r.length; stableCount = 0; }
+        else { stableCount++; }
+        if (attempts > 40 || stableCount >= 3) {
           clearInterval(pollRef.current!);
           pollRef.current = null;
           setIsRacing(false);

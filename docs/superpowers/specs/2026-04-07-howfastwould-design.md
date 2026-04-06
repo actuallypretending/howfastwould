@@ -1,0 +1,180 @@
+# howfastwould — Design Spec
+
+**Date:** 2026-04-07
+**Status:** Approved
+
+## Overview
+
+A meme website that benchmarks AI models against each other (and against humans) on random LeetCode problems. Real benchmark data, presented in an absurd, shareable way. The site answers: *how fast would [model] solve [problem]?*
+
+---
+
+## Core Concept
+
+- Fetch a LeetCode problem
+- Race all AI models in parallel — time ends when a model produces a passing solution (verified by running code against test cases)
+- Display results as a dark terminal-aesthetic leaderboard with shareable meme cards
+- Users can time themselves against the AIs in real time
+
+---
+
+## Architecture
+
+```
+[ Browser ]
+  Next.js app (Vercel)
+    ↓ REST + SSE
+[ API Server ]
+  Rust / Axum (Fly.io)
+    ↓ spawns
+[ Benchmark Runner ]
+  Rust binary — races all models in parallel (tokio::spawn per model)
+    ↓ calls
+  AI APIs (see Model Roster)
+    ↓ verifies via
+  Piston API (open source sandboxed code execution)
+    ↓ stores in
+  SQLite (results cache + problem fallback cache)
+    ↑ problems from
+  LeetCode GraphQL API → SQLite fallback if LC is down
+```
+
+### Two Modes
+
+**Browse Mode** — user lands on site, sees a random problem with cached benchmark results. Pre-run, instant. Includes full leaderboard and history.
+
+**Live Race Mode** — user clicks "race again", models race in real time. SSE stream pushes `{model, status, time_ms, attempts}` events as each model finishes. Results saved to cache on completion.
+
+---
+
+## Model Roster
+
+Model list is config-driven (stored in SQLite `models` table). New models are added automatically via a daily sync job that polls each provider's `/models` endpoint and diffs against the DB. New models get a 🆕 badge on the frontend.
+
+### American
+- GPT-4.5, o3, o4-mini (OpenAI)
+- Claude Opus 4.6, Claude Sonnet 4.6 (Anthropic)
+- Gemini 2.5 Pro, Gemini 2.0 Flash (Google)
+- Grok 3 (xAI)
+- Llama 4 via Fireworks (Meta)
+- Mistral Large 2
+
+### Chinese 🐉
+- DeepSeek V3, DeepSeek R2
+- Qwen 2.5 Coder, QwQ-32B (Alibaba)
+- Kimi k1.5 (Moonshot)
+- Doubao (ByteDance)
+- Hunyuan (Tencent)
+
+### Humans 👤
+- **LeetCode Avg User** — median solve time pulled from LeetCode submission metadata per problem
+- **NeetCode** — estimated from public video solve times
+- **Tourist** — estimated from competitive programming contest results; static lookup table updated manually
+- **You** — live timer, starts when user opens the problem, stopped via "✓ I solved it" or "give up 💀"
+
+---
+
+## Benchmark Runner
+
+### Race Flow (per problem)
+
+1. `fetch_problem()` — LeetCode GraphQL API → parse title, description, starter code, test cases → SQLite fallback if LC is down
+2. `race_all_models()` — parallel `tokio::spawn` per model:
+   - Record `Instant::now()`
+   - Call model API with minimal prompt (no hints, no CoT encouragement — raw capability test)
+   - Extract code block from response
+   - Submit to Piston for sandboxed execution against test cases
+   - If wrong: retry up to 2x with error feedback included
+   - Record `elapsed`
+   - Emit SSE event: `{model, status, elapsed, attempts}`
+3. `store_result()` — persist to SQLite
+
+### Prompt Format
+
+```
+Solve the following LeetCode problem. Return only the solution function/class, no explanation.
+
+{{ problem title }}
+{{ problem description }}
+{{ starter code }}
+```
+
+### What Counts as Solved
+
+- **Solved**: output matches all extracted test cases. Up to 2 retries allowed; elapsed time includes retries. Fewer attempts = bragging rights.
+- **Failed**: wrong answer or runtime error after 2 retries, or API timeout (30s cap). Displayed with maximum mockery.
+
+### Human Baselines
+
+- **LeetCode Avg**: pulled from LC submission stats per problem
+- **NeetCode / Tourist**: static lookup table, updated manually from public sources
+- **You**: live browser timer (honor system)
+
+---
+
+## UI Design
+
+**Aesthetic:** Dark terminal / hackery. Monospace fonts, `#0d0d0d` background, `#00ff41` green accents.
+
+**Key elements:**
+- Logo: `howfast would.com` in monospace, green accent on "fast"
+- Search bar: monospace input supporting name, number, difficulty, topic search. "🎲 random" button for chaos mode. Dropdown shows matches with race count.
+- "You" banner: live timer with "✓ I solved it" and "give up 💀" buttons
+- Results list: ranked leaderboard with horizontal bar chart, time, attempt count, roast labels
+- 🆕 badge on newly discovered models
+- Meme card: generated on click (or auto-generated for "You" after solving). Gradient dark card, Impact-style text, designed to be screenshotted and posted.
+
+**Meme card format:**
+```
+[MODEL NAME] SOLVED [PROBLEM]
+IN [TIME]
+[roast line referencing another contestant]
+```
+
+---
+
+## Data Model (SQLite)
+
+```sql
+problems (id, lc_id, title, difficulty, description, starter_code, test_cases JSON, source, cached_at)
+models   (id, provider, name, display_name, api_key_env, is_active, is_new, added_at)
+results  (id, problem_id, model_id, solved, time_ms, attempts, run_at)
+```
+
+## API (Rust / Axum)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/problems/random` | Random problem (LC API → SQLite fallback) |
+| GET | `/problems/search?q=` | Search by title / number / difficulty |
+| GET | `/problems/:id/results` | Cached race results for a problem |
+| POST | `/races` | Trigger a live race, returns `race_id` |
+| GET | `/races/:id/stream` | SSE stream of race events |
+| GET | `/models` | Full active model roster |
+
+## Cron Jobs
+
+- **Daily**: `sync_models()` — poll provider `/models` endpoints, insert new ones with `is_new=true`
+- **Every 6h**: `run_benchmark_batch()` — pre-run races on random problems to keep cache fresh
+
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js (TypeScript), deployed on Vercel |
+| Backend | Rust / Axum, deployed on Fly.io |
+| Database | SQLite (embedded in backend) |
+| Code execution | Piston API (self-hostable, open source) |
+| Streaming | Server-Sent Events (SSE) |
+| Problem source | LeetCode GraphQL API + SQLite fallback cache |
+
+---
+
+## Out of Scope
+
+- User accounts / auth
+- Model vs model voting / community ratings
+- Submitting directly to LeetCode (ToS risk)
+- Mobile-specific design (responsive is fine, mobile-first is not)

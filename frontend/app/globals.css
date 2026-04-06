@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --border: #1a1a1a;
+  --green: #00ff41;
+  --text: #cccccc;
+  --muted: #555555;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+.difficulty-easy { color: #00ff41; }
+.difficulty-medium { color: #ffaa00; }
+.difficulty-hard { color: #ff4444; }

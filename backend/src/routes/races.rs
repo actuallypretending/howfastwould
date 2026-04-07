@@ -30,10 +30,7 @@ pub async fn create(
 
     let problem = sqlx::query_as!(
         crate::models::Problem,
-        r#"SELECT id as "id!", lc_id as "lc_id!", title as "title!", difficulty as "difficulty!",
-           description as "description!", starter_code as "starter_code!",
-           test_cases as "test_cases!", source as "source!", cached_at as "cached_at!"
-           FROM problems WHERE id = ?"#,
+        "SELECT * FROM problems WHERE id = $1",
         body.problem_id
     ).fetch_optional(&state.pool).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -41,10 +38,7 @@ pub async fn create(
 
     let models = sqlx::query_as!(
         crate::models::Model,
-        r#"SELECT id as "id!", provider as "provider!", name as "name!", display_name as "display_name!",
-           api_key_env as "api_key_env!", is_active as "is_active!", is_new as "is_new!",
-           is_human as "is_human!", human_times, added_at as "added_at!"
-           FROM models WHERE is_active = 1"#
+        "SELECT * FROM models WHERE is_active = true"
     ).fetch_all(&state.pool).await.unwrap_or_default();
 
     let (tx, _) = broadcast::channel::<RaceEvent>(64);
@@ -55,7 +49,7 @@ pub async fn create(
 
     let now = Utc::now().to_rfc3339();
     sqlx::query!(
-        "INSERT INTO races (id, problem_id, started_at) VALUES (?, ?, ?)",
+        "INSERT INTO races (id, problem_id, started_at) VALUES ($1, $2, $3)",
         race_id, body.problem_id, now
     ).execute(&state.pool).await.ok();
 
@@ -63,14 +57,19 @@ pub async fn create(
         let results = runner.race(&race_id_clone, &problem, models, tx_clone).await;
         for result in &results {
             sqlx::query!(
-                "INSERT OR REPLACE INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)
+                   ON CONFLICT (id) DO UPDATE SET
+                   problem_id=$2, model_id=$3, solved=$4, time_ms=$5, attempts=$6, run_at=$7"#,
                 result.id, result.problem_id, result.model_id, result.solved,
                 result.time_ms, result.attempts, result.run_at
             ).execute(&pool).await.ok();
         }
         let finished = Utc::now().to_rfc3339();
-        sqlx::query!("UPDATE races SET finished_at = ? WHERE id = ?", finished, race_id_clone)
-            .execute(&pool).await.ok();
+        sqlx::query!(
+            "UPDATE races SET finished_at = $1 WHERE id = $2",
+            finished, race_id_clone
+        ).execute(&pool).await.ok();
     });
 
     Ok(Json(CreateRaceResponse { race_id }))

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTimer } from "@/app/hooks/useTimer";
 import { formatTime } from "@/app/lib/api";
 import { Problem, RaceResultWithModel } from "@/app/lib/types";
@@ -47,7 +47,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { state: timerState, elapsedMs, start, stop, reset } = useTimer();
 
-  const topAIs = getTopAIs(results);
+  const topAIs = useMemo(() => getTopAIs(results), [results]);
 
   // Reset when problem changes
   useEffect(() => {
@@ -172,12 +172,13 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
       {/* Roast banner */}
       {roastText && (
         <div
-          className="px-5 py-2 text-xs italic border-b"
+          className="px-5 py-2 text-xs italic"
           style={{
             background: "#1e1000",
             borderLeft: "3px solid var(--orange)",
-            borderColor: "#3a2800",
-            borderBottomColor: "#3a2800",
+            borderTop: "1px solid #3a2800",
+            borderRight: "1px solid #3a2800",
+            borderBottom: "1px solid #3a2800",
             color: "var(--muted)",
           }}
         >

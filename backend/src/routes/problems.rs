@@ -77,38 +77,55 @@ pub async fn results(
         .collect();
 
     if !missing.is_empty() {
-        let problem_opt = sqlx::query_as!(
-            crate::models::Problem,
-            "SELECT * FROM problems WHERE id = $1",
-            id
-        ).fetch_optional(&state.pool).await.unwrap_or(None);
+        // Prevent duplicate spawns: only trigger if no benchmark is already in flight
+        // for this problem.
+        let already_running = {
+            let mut in_flight = state.benchmarks_in_flight.lock().await;
+            !in_flight.insert(id.clone())
+        };
 
-        if let Some(problem) = problem_opt {
-            let runner = state.runner.clone();
-            let pool = state.pool.clone();
-            let race_id = Uuid::new_v4().to_string();
-            let (tx, _) = broadcast::channel(64);
-            tokio::spawn(async move {
-                tracing::info!(
-                    "on-demand: benchmarking {} missing models for '{}'",
-                    missing.len(),
-                    problem.title
-                );
-                let bench_results = runner.race(&race_id, &problem, missing, tx).await;
-                for result in &bench_results {
-                    sqlx::query!(
-                        r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
+        if !already_running {
+            let problem_opt = sqlx::query_as!(
+                crate::models::Problem,
+                "SELECT * FROM problems WHERE id = $1",
+                id
+            ).fetch_optional(&state.pool).await.unwrap_or(None);
+
+            if let Some(problem) = problem_opt {
+                let runner = state.runner.clone();
+                let pool = state.pool.clone();
+                let in_flight = state.benchmarks_in_flight.clone();
+                let problem_id = id.clone();
+                let race_id = Uuid::new_v4().to_string();
+                let (tx, _) = broadcast::channel(64);
+                tokio::spawn(async move {
+                    tracing::info!(
+                        "on-demand: benchmarking {} missing models for '{}'",
+                        missing.len(),
+                        problem.title
+                    );
+                    let bench_results = runner.race(&race_id, &problem, missing, tx).await;
+                    for result in &bench_results {
+                        sqlx::query!(
+                            r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
                            VALUES ($1, $2, $3, $4, $5, $6, $7)
                            ON CONFLICT (problem_id, model_id) DO UPDATE SET
                                solved = EXCLUDED.solved,
                                time_ms = EXCLUDED.time_ms,
                                attempts = EXCLUDED.attempts,
                                run_at = EXCLUDED.run_at"#,
-                        result.id, result.problem_id, result.model_id,
-                        result.solved, result.time_ms, result.attempts, result.run_at
-                    ).execute(&pool).await.ok();
-                }
-            });
+                            result.id, result.problem_id, result.model_id,
+                            result.solved, result.time_ms, result.attempts, result.run_at
+                        ).execute(&pool).await.ok();
+                    }
+                    // Remove from in-flight set so future requests can re-trigger
+                    // if new models are added later.
+                    in_flight.lock().await.remove(&problem_id);
+                });
+            } else {
+                // Problem not found; remove from in-flight set
+                state.benchmarks_in_flight.lock().await.remove(&id);
+            }
         }
     }
 

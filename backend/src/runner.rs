@@ -132,7 +132,8 @@ impl Runner {
     }
 
     async fn call_model(&self, model: &Model, api_key: &str, prompt: &str) -> Result<String> {
-        let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt)?;
+        let cf_account_id = std::env::var("CF_ACCOUNT_ID").unwrap_or_default();
+        let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt, &cf_account_id)?;
         let auth_value = auth_header_value(&model.provider, api_key);
         let resp: Value = self.http
             .post(&url)
@@ -184,7 +185,7 @@ fn build_retry_prompt(title: &str, description: &str, starter: &str, error: &str
     )
 }
 
-fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &str) -> Result<(String, Value)> {
+fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &str, cf_account_id: &str) -> Result<(String, Value)> {
     match provider {
         "openai" | "xai" | "fireworks" | "deepseek" | "mistral" | "groq" | "github" => {
             let base = match provider {
@@ -211,11 +212,10 @@ fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &
             json!({ "contents": [{"parts": [{"text": prompt}]}] })
         )),
         "cloudflare" => {
-            let account_id = std::env::var("CF_ACCOUNT_ID").unwrap_or_default();
             Ok((
                 format!(
                     "https://api.cloudflare.com/client/v4/accounts/{}/ai/run/{}",
-                    account_id, model_name
+                    cf_account_id, model_name
                 ),
                 json!({ "messages": [{"role":"user","content": prompt}], "max_tokens": 2048 })
             ))
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_build_api_request_groq() {
-        let (url, body) = build_api_request("groq", "llama-3.3-70b-versatile", "", "test").unwrap();
+        let (url, body) = build_api_request("groq", "llama-3.3-70b-versatile", "", "test", "").unwrap();
         assert_eq!(url, "https://api.groq.com/openai/v1/chat/completions");
         assert_eq!(body["model"], "llama-3.3-70b-versatile");
         assert!(body["messages"].is_array());
@@ -297,22 +297,21 @@ mod tests {
 
     #[test]
     fn test_build_api_request_github() {
-        let (url, body) = build_api_request("github", "gpt-4o-mini", "", "test").unwrap();
+        let (url, body) = build_api_request("github", "gpt-4o-mini", "", "test", "").unwrap();
         assert_eq!(url, "https://models.inference.ai.azure.com/chat/completions");
         assert_eq!(body["model"], "gpt-4o-mini");
     }
 
     #[test]
     fn test_build_api_request_cloudflare() {
-        std::env::set_var("CF_ACCOUNT_ID", "abc123");
-        let (url, _) = build_api_request("cloudflare", "@cf/meta/llama-3.1-8b-instruct", "", "test").unwrap();
+        let (url, _) = build_api_request("cloudflare", "@cf/meta/llama-3.1-8b-instruct", "", "test", "abc123").unwrap();
         assert!(url.contains("abc123"), "URL should contain account ID");
         assert!(url.contains("llama-3.1-8b-instruct"), "URL should contain model name");
     }
 
     #[test]
     fn test_build_api_request_unknown_provider_errors() {
-        let result = build_api_request("notreal", "model", "", "test");
+        let result = build_api_request("notreal", "model", "", "test", "");
         assert!(result.is_err());
     }
 

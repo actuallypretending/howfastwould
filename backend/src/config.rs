@@ -17,10 +17,6 @@ pub struct Config {
     pub doubao_api_key: String,
     pub hunyuan_api_key: String,
     pub mistral_api_key: String,
-    pub groq_api_key: String,
-    pub github_token: String,
-    pub cf_api_token: String,
-    pub cf_account_id: String,
 }
 
 impl Config {
@@ -53,28 +49,6 @@ impl Config {
             doubao_api_key: std::env::var("DOUBAO_API_KEY").unwrap_or_default(),
             hunyuan_api_key: std::env::var("HUNYUAN_API_KEY").unwrap_or_default(),
             mistral_api_key: std::env::var("MISTRAL_API_KEY").unwrap_or_default(),
-            groq_api_key: std::env::var("GROQ_API_KEY").unwrap_or_default(),
-            github_token: std::env::var("GITHUB_TOKEN").unwrap_or_default(),
-            cf_api_token: std::env::var("CF_API_TOKEN").unwrap_or_default(),
-            cf_account_id: std::env::var("CF_ACCOUNT_ID").unwrap_or_default(),
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_config_new_fields_default_empty() {
-        std::env::remove_var("GROQ_API_KEY");
-        std::env::remove_var("GITHUB_TOKEN");
-        std::env::remove_var("CF_API_TOKEN");
-        std::env::remove_var("CF_ACCOUNT_ID");
-        let cfg = Config::from_env().unwrap();
-        assert_eq!(cfg.groq_api_key, "");
-        assert_eq!(cfg.github_token, "");
-        assert_eq!(cfg.cf_api_token, "");
-        assert_eq!(cfg.cf_account_id, "");
     }
 }

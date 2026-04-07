@@ -44,7 +44,7 @@ impl Runner {
 
         let mut handles = vec![];
 
-        for model in models.into_iter().filter(|m| m.is_active != 0 && m.is_human == 0) {
+        for model in models.into_iter().filter(|m| m.is_active && !m.is_human) {
             let runner = self.clone_cheap();
             let problem = problem.clone();
             let test_cases = test_cases.clone();

@@ -20,7 +20,7 @@ impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         Ok(Self {
             database_url: std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "sqlite:./howfastwould.db".into()),
+                .unwrap_or_else(|_| "postgres://localhost/howfastwould".into()),
             port: std::env::var("PORT")
                 .unwrap_or_else(|_| "3001".into())
                 .parse()?,

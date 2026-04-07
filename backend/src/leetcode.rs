@@ -123,11 +123,14 @@ impl LeetcodeClient {
     }
 }
 
-pub async fn cache_problem(pool: &sqlx::SqlitePool, problem: &Problem) -> Result<()> {
+pub async fn cache_problem(pool: &sqlx::PgPool, problem: &Problem) -> Result<()> {
     sqlx::query!(
-        r#"INSERT OR REPLACE INTO problems
+        r#"INSERT INTO problems
            (id, lc_id, title, difficulty, description, starter_code, test_cases, source, cached_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO UPDATE SET
+           lc_id=$2, title=$3, difficulty=$4, description=$5,
+           starter_code=$6, test_cases=$7, source=$8, cached_at=$9"#,
         problem.id, problem.lc_id, problem.title, problem.difficulty,
         problem.description, problem.starter_code, problem.test_cases,
         problem.source, problem.cached_at
@@ -135,23 +138,18 @@ pub async fn cache_problem(pool: &sqlx::SqlitePool, problem: &Problem) -> Result
     Ok(())
 }
 
-pub async fn get_random_cached(pool: &sqlx::SqlitePool) -> Result<Problem> {
+pub async fn get_random_cached(pool: &sqlx::PgPool) -> Result<Problem> {
     sqlx::query_as!(Problem,
-        r#"SELECT id as "id!", lc_id as "lc_id!", title as "title!", difficulty as "difficulty!",
-           description as "description!", starter_code as "starter_code!",
-           test_cases as "test_cases!", source as "source!", cached_at as "cached_at!"
-           FROM problems ORDER BY RANDOM() LIMIT 1"#
+        "SELECT * FROM problems ORDER BY RANDOM() LIMIT 1"
     ).fetch_one(pool).await.context("no cached problems")
 }
 
-pub async fn search_problems(pool: &sqlx::SqlitePool, q: &str) -> Result<Vec<Problem>> {
+pub async fn search_problems(pool: &sqlx::PgPool, q: &str) -> Result<Vec<Problem>> {
     let escaped = q.replace('%', "\\%").replace('_', "\\_");
     let pattern = format!("%{}%", escaped);
     sqlx::query_as!(Problem,
-        r#"SELECT id as "id!", lc_id as "lc_id!", title as "title!", difficulty as "difficulty!",
-           description as "description!", starter_code as "starter_code!",
-           test_cases as "test_cases!", source as "source!", cached_at as "cached_at!"
-           FROM problems WHERE title LIKE ? ESCAPE '\\' OR CAST(lc_id AS TEXT) = ? OR difficulty = ?
+        r#"SELECT * FROM problems
+           WHERE title LIKE $1 OR CAST(lc_id AS TEXT) = $2 OR difficulty = $3
            LIMIT 20"#,
         pattern, q, q
     ).fetch_all(pool).await.context("search failed")

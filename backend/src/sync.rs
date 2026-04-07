@@ -2,13 +2,13 @@ use crate::{config::Config, leetcode::LeetcodeClient, models::Model, runner::Run
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 use chrono::Utc;
 
-pub async fn sync_models(pool: &SqlitePool, config: &Config) -> Result<()> {
+pub async fn sync_models(pool: &PgPool, config: &Config) -> Result<()> {
     let client = Client::new();
     let now = Utc::now().to_rfc3339();
 
@@ -59,7 +59,7 @@ pub async fn sync_models(pool: &SqlitePool, config: &Config) -> Result<()> {
                 if let Some(models) = body["data"].as_array() {
                     for m in models {
                         let name = m["id"].as_str().unwrap_or_default();
-                        upsert_model(pool, "deepseek", name, &format!("\u{1F409} {}", name), "DEEPSEEK_API_KEY", &now).await.ok();
+                        upsert_model(pool, "deepseek", name, &format!("🐉 {}", name), "DEEPSEEK_API_KEY", &now).await.ok();
                     }
                 }
             }
@@ -71,30 +71,27 @@ pub async fn sync_models(pool: &SqlitePool, config: &Config) -> Result<()> {
 }
 
 async fn upsert_model(
-    pool: &SqlitePool,
+    pool: &PgPool,
     provider: &str,
     name: &str,
     display_name: &str,
     api_key_env: &str,
     now: &str,
 ) -> Result<()> {
-    let existing = sqlx::query!("SELECT id FROM models WHERE name = ?", name)
-        .fetch_optional(pool).await?;
-
-    if existing.is_none() {
-        let id = Uuid::new_v4().to_string();
-        sqlx::query!(
-            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, added_at) VALUES (?, ?, ?, ?, ?, 1, 1, 0, ?)",
-            id, provider, name, display_name, api_key_env, now
-        ).execute(pool).await?;
+    let id = Uuid::new_v4().to_string();
+    let result = sqlx::query!(
+        "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, added_at) VALUES ($1, $2, $3, $4, $5, true, true, false, $6) ON CONFLICT (name) DO NOTHING",
+        id, provider, name, display_name, api_key_env, now
+    ).execute(pool).await?;
+    if result.rows_affected() > 0 {
         tracing::info!("new model discovered: {} ({})", name, provider);
     }
     Ok(())
 }
 
-pub async fn seed_initial_models(pool: &SqlitePool) -> Result<()> {
-    let count: i32 = sqlx::query_scalar!("SELECT COUNT(*) FROM models")
-        .fetch_one(pool).await?;
+pub async fn seed_initial_models(pool: &PgPool) -> Result<()> {
+    let count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM models")
+        .fetch_one(pool).await?.unwrap_or(0);
 
     if count > 0 { return Ok(()); }
 
@@ -110,16 +107,16 @@ pub async fn seed_initial_models(pool: &SqlitePool) -> Result<()> {
         ("xai", "grok-3", "Grok 3", "XAI_API_KEY", false),
         ("fireworks", "accounts/meta/models/llama-4", "Llama 4", "FIREWORKS_API_KEY", false),
         ("mistral", "mistral-large-latest", "Mistral Large 2", "MISTRAL_API_KEY", false),
-        ("deepseek", "deepseek-chat", "\u{1F409} DeepSeek V3", "DEEPSEEK_API_KEY", false),
-        ("deepseek", "deepseek-reasoner", "\u{1F409} DeepSeek R2", "DEEPSEEK_API_KEY", false),
-        ("qwen", "qwen2.5-coder-32b-instruct", "\u{1F409} Qwen 2.5 Coder", "QWEN_API_KEY", false),
-        ("qwen", "qwq-32b", "\u{1F409} QwQ-32B", "QWEN_API_KEY", false),
-        ("moonshot", "moonshot-v1-8k", "\u{1F409} Kimi k1.5", "MOONSHOT_API_KEY", false),
-        ("doubao", "doubao-pro-32k", "\u{1F409} Doubao", "DOUBAO_API_KEY", false),
-        ("hunyuan", "hunyuan-standard", "\u{1F409} Hunyuan", "HUNYUAN_API_KEY", false),
-        ("human", "lc-avg", "\u{1F464} LeetCode Avg", "", true),
-        ("human", "neetcode", "\u{1F464} NeetCode", "", true),
-        ("human", "tourist", "\u{1F464} Tourist", "", true),
+        ("deepseek", "deepseek-chat", "🐉 DeepSeek V3", "DEEPSEEK_API_KEY", false),
+        ("deepseek", "deepseek-reasoner", "🐉 DeepSeek R2", "DEEPSEEK_API_KEY", false),
+        ("qwen", "qwen2.5-coder-32b-instruct", "🐉 Qwen 2.5 Coder", "QWEN_API_KEY", false),
+        ("qwen", "qwq-32b", "🐉 QwQ-32B", "QWEN_API_KEY", false),
+        ("moonshot", "moonshot-v1-8k", "🐉 Kimi k1.5", "MOONSHOT_API_KEY", false),
+        ("doubao", "doubao-pro-32k", "🐉 Doubao", "DOUBAO_API_KEY", false),
+        ("hunyuan", "hunyuan-standard", "🐉 Hunyuan", "HUNYUAN_API_KEY", false),
+        ("human", "lc-avg", "👤 LeetCode Avg", "", true),
+        ("human", "neetcode", "👤 NeetCode", "", true),
+        ("human", "tourist", "👤 Tourist", "", true),
     ];
 
     for (provider, name, display, key_env, is_human) in models {
@@ -134,7 +131,7 @@ pub async fn seed_initial_models(pool: &SqlitePool) -> Result<()> {
         } else { None };
 
         sqlx::query!(
-            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, human_times, added_at) VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?)",
+            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, human_times, added_at) VALUES ($1, $2, $3, $4, $5, true, false, $6, $7, $8)",
             id, provider, name, display, key_env, is_human, human_times, now
         ).execute(pool).await?;
     }
@@ -143,7 +140,7 @@ pub async fn seed_initial_models(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-pub async fn run_benchmark_batch(pool: &SqlitePool, config: Arc<Config>) -> Result<()> {
+pub async fn run_benchmark_batch(pool: &PgPool, config: Arc<Config>) -> Result<()> {
     let lc = LeetcodeClient::new();
     let runner = Runner::new(config);
     let (tx, _) = broadcast::channel(64);
@@ -158,10 +155,7 @@ pub async fn run_benchmark_batch(pool: &SqlitePool, config: Arc<Config>) -> Resu
         };
 
         let models = sqlx::query_as!(Model,
-            r#"SELECT id as "id!", provider as "provider!", name as "name!", display_name as "display_name!",
-               api_key_env as "api_key_env!", is_active as "is_active!", is_new as "is_new!",
-               is_human as "is_human!", human_times, added_at as "added_at!"
-               FROM models WHERE is_active = 1"#
+            "SELECT * FROM models WHERE is_active = true"
         ).fetch_all(pool).await.unwrap_or_default();
 
         let race_id = Uuid::new_v4().to_string();
@@ -169,7 +163,10 @@ pub async fn run_benchmark_batch(pool: &SqlitePool, config: Arc<Config>) -> Resu
 
         for result in &results {
             sqlx::query!(
-                "INSERT OR REPLACE INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)
+                   ON CONFLICT (id) DO UPDATE SET
+                   problem_id=$2, model_id=$3, solved=$4, time_ms=$5, attempts=$6, run_at=$7"#,
                 result.id, result.problem_id, result.model_id, result.solved,
                 result.time_ms, result.attempts, result.run_at
             ).execute(pool).await.ok();

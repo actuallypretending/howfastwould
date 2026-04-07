@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.id, r.problem_id, r.model_id, r.solved, r.time_ms, r.attempts, r.run_at,\n           m.display_name, m.provider, m.name as model_name, m.is_human\n           FROM results r JOIN models m ON r.model_id = m.id\n           WHERE r.problem_id = $1\n           ORDER BY r.time_ms ASC NULLS LAST",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "problem_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "model_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "solved",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "time_ms",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "attempts",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "run_at",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "model_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "is_human",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6c92dc428e59e85550c981a028c86fcfe9734e9d9f9f18518075885f33ac7db8"
+}

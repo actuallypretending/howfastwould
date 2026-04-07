@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM problems\n           WHERE title LIKE $1 OR CAST(lc_id AS TEXT) = $2 OR difficulty = $3\n           LIMIT 20",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "lc_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "difficulty",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "starter_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "test_cases",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "cached_at",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ef270ea2b7f73ea4cc6ae07a2ec838074364c92a647b27f8eeb32e07ef26139a"
+}

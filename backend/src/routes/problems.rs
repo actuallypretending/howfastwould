@@ -41,7 +41,7 @@ pub async fn results(
         r#"SELECT r.id, r.problem_id, r.model_id, r.solved, r.time_ms, r.attempts, r.run_at,
            m.display_name, m.provider, m.name as model_name, m.is_human
            FROM results r JOIN models m ON r.model_id = m.id
-           WHERE r.problem_id = ?
+           WHERE r.problem_id = $1
            ORDER BY r.time_ms ASC NULLS LAST"#,
         id
     ).fetch_all(&state.pool).await.unwrap_or_default();
@@ -51,8 +51,8 @@ pub async fn results(
         model_name: r.model_name,
         display_name: r.display_name,
         provider: r.provider,
-        is_human: r.is_human != 0,
-        solved: r.solved != 0,
+        is_human: r.is_human,
+        solved: r.solved,
         time_ms: r.time_ms,
         attempts: r.attempts,
         run_at: r.run_at,

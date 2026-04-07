@@ -1,0 +1,2 @@
+[variables]
+SQLX_OFFLINE = "true"

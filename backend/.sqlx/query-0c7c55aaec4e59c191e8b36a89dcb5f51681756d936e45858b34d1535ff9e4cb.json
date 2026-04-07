@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO problems\n           (id, lc_id, title, difficulty, description, starter_code, test_cases, source, cached_at)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n           ON CONFLICT (id) DO UPDATE SET\n           lc_id=$2, title=$3, difficulty=$4, description=$5,\n           starter_code=$6, test_cases=$7, source=$8, cached_at=$9",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0c7c55aaec4e59c191e8b36a89dcb5f51681756d936e45858b34d1535ff9e4cb"
+}

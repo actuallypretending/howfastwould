@@ -1,9 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-fn i64_as_bool<S: serde::Serializer>(v: &i64, s: S) -> Result<S::Ok, S::Error> {
-    s.serialize_bool(*v != 0)
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Problem {
     pub id: String,
@@ -31,12 +27,9 @@ pub struct Model {
     pub display_name: String,
     #[serde(skip)]
     pub api_key_env: String,
-    #[serde(serialize_with = "i64_as_bool")]
-    pub is_active: i64,
-    #[serde(serialize_with = "i64_as_bool")]
-    pub is_new: i64,
-    #[serde(serialize_with = "i64_as_bool")]
-    pub is_human: i64,
+    pub is_active: bool,
+    pub is_new: bool,
+    pub is_human: bool,
     pub human_times: Option<String>,
     pub added_at: String,
 }

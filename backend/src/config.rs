@@ -3,6 +3,9 @@ pub struct Config {
     pub database_url: String,
     pub port: u16,
     pub piston_url: String,
+    /// Comma-separated list of allowed CORS origins, e.g. "https://howfastwould.com".
+    /// Set ALLOWED_ORIGINS env var in production. If empty, falls back to permissive (dev only).
+    pub allowed_origins: Vec<String>,
     pub openai_api_key: String,
     pub anthropic_api_key: String,
     pub google_api_key: String,
@@ -18,6 +21,14 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
+        let allowed_origins = std::env::var("ALLOWED_ORIGINS")
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect();
+
         Ok(Self {
             database_url: std::env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "postgres://localhost/howfastwould".into()),
@@ -26,6 +37,7 @@ impl Config {
                 .parse()?,
             piston_url: std::env::var("PISTON_URL")
                 .unwrap_or_else(|_| "https://emkc.org/api/v2/piston".into()),
+            allowed_origins,
             openai_api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
             anthropic_api_key: std::env::var("ANTHROPIC_API_KEY").unwrap_or_default(),
             google_api_key: std::env::var("GOOGLE_API_KEY").unwrap_or_default(),

@@ -1,45 +1,69 @@
+"use client";
 import { Problem, Model } from "@/app/lib/types";
 
 interface Props {
   problem: Problem;
   newModels: Model[];
+  solved: boolean;
+  onRaceAgain: () => void;
+  isRacing: boolean;
 }
 
-const diffStyle = {
-  Easy: { background: "#1b2a1b", color: "#00ff41" },
-  Medium: { background: "#2a1f0a", color: "#ffaa00" },
-  Hard: { background: "#2a0a0a", color: "#ff4444" },
-};
-
-export default function ProblemHeader({ problem, newModels }: Props) {
+export default function ProblemHeader({ problem, newModels, solved, onRaceAgain, isRacing }: Props) {
   return (
     <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
       <div className="flex items-center gap-2 flex-wrap mb-2">
+        <span className="text-xs" style={{ color: "var(--muted)" }}>#{problem.lc_id}</span>
         <span
-          className="text-xs rounded px-2 py-0.5"
-          style={{ background: "var(--surface)", color: "var(--muted)" }}
-        >
-          #{problem.lc_id}
-        </span>
-        <span className="text-lg font-black text-white">{problem.title}</span>
-        <span
-          className="text-xs rounded px-2 py-0.5"
-          style={diffStyle[problem.difficulty as keyof typeof diffStyle] ?? {}}
+          className="text-xs rounded-full px-2 py-0.5 font-semibold"
+          style={
+            problem.difficulty === "Easy"
+              ? { color: "var(--green)", background: "rgba(0,184,163,0.1)" }
+              : problem.difficulty === "Medium"
+              ? { color: "var(--orange)", background: "rgba(255,161,22,0.1)" }
+              : { color: "var(--red)", background: "rgba(239,71,67,0.1)" }
+          }
         >
           {problem.difficulty}
         </span>
-        {newModels.length > 0 && (
+        {solved && (
           <span
-            className="ml-auto text-xs rounded px-2 py-0.5"
-            style={{ background: "#1a1a00", color: "#ffdd57" }}
+            className="text-xs rounded-full px-2 py-0.5 font-semibold"
+            style={{ color: "var(--green)", background: "rgba(0,184,163,0.1)" }}
           >
-            🆕 {newModels[0].display_name} just dropped
+            Solved
           </span>
         )}
+        <div className="ml-auto flex items-center gap-2">
+          {newModels.length > 0 && (
+            <span
+              className="text-xs rounded px-2 py-0.5"
+              style={{ background: "#1a1a00", color: "#ffdd57" }}
+            >
+              🆕 {newModels[0].display_name} just dropped
+            </span>
+          )}
+          <button
+            onClick={onRaceAgain}
+            disabled={isRacing}
+            className="text-xs rounded px-2 py-0.5"
+            style={{
+              color: isRacing ? "var(--muted)" : "var(--orange)",
+              border: `1px solid ${isRacing ? "var(--border)" : "var(--orange)"}`,
+              background: "transparent",
+              cursor: isRacing ? "not-allowed" : "pointer",
+            }}
+          >
+            {isRacing ? "running…" : "▶ re-run benchmarks"}
+          </button>
+        </div>
       </div>
-      <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "#666" }}>
-        {problem.description.replace(/<[^>]*>/g, "").slice(0, 200)}...
-      </p>
+      <div className="text-xl font-bold mb-1" style={{ color: "var(--text)" }}>
+        {problem.title}
+      </div>
+      <div className="text-sm font-semibold" style={{ color: "var(--orange)" }}>
+        How fast would AI solve this?
+      </div>
     </div>
   );
 }

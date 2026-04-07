@@ -10,7 +10,7 @@ mod sync;
 
 use axum::Router;
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -52,9 +52,31 @@ async fn main() -> anyhow::Result<()> {
         });
     }
 
+    // Build a CORS layer that is restricted to configured origins in production.
+    // If no ALLOWED_ORIGINS env var is set we fall back to permissive (dev convenience only).
+    let cors = if cfg.allowed_origins.is_empty() {
+        tracing::warn!("ALLOWED_ORIGINS not set — using permissive CORS (dev mode)");
+        CorsLayer::permissive()
+    } else {
+        let origins: Vec<axum::http::HeaderValue> = cfg
+            .allowed_origins
+            .iter()
+            .filter_map(|o| o.parse().ok())
+            .collect();
+        tracing::info!("CORS restricted to: {:?}", cfg.allowed_origins);
+        CorsLayer::new()
+            .allow_origin(AllowOrigin::list(origins))
+            .allow_methods([
+                axum::http::Method::GET,
+                axum::http::Method::POST,
+                axum::http::Method::OPTIONS,
+            ])
+            .allow_headers([axum::http::header::CONTENT_TYPE])
+    };
+
     let app = Router::new()
         .nest("/", routes::router(pool.clone(), cfg.clone()))
-        .layer(CorsLayer::permissive());
+        .layer(cors);
 
     let addr = format!("0.0.0.0:{}", cfg.port);
     tracing::info!("listening on {}", addr);

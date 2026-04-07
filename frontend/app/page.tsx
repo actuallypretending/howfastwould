@@ -6,7 +6,8 @@ import MemeCard from "./components/MemeCard";
 import ProblemHeader from "./components/ProblemHeader";
 import RaceResults from "./components/RaceResults";
 import SearchBar from "./components/SearchBar";
-import YouBanner from "./components/YouBanner";
+import WinnerCard from "./components/WinnerCard";
+import RaceEditor from "./components/RaceEditor";
 
 export default function Home() {
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -14,6 +15,7 @@ export default function Home() {
   const [models, setModels] = useState<Model[]>([]);
   const [isRacing, setIsRacing] = useState(false);
   const [userResult, setUserResult] = useState<{ ms: number; gaveUp: boolean } | null>(null);
+  const [raceKey, setRaceKey] = useState(0);
   const [memeTarget, setMemeTarget] = useState<RaceResultWithModel | null>(null);
   const [roast, setRoast] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -43,6 +45,7 @@ export default function Home() {
   const handleRaceAgain = async () => {
     if (!problem || isRacing) return;
     setIsRacing(true);
+    setUserResult(null);
     try {
       await createRace(problem.id);
       let attempts = 0;
@@ -58,10 +61,12 @@ export default function Home() {
           clearInterval(pollRef.current!);
           pollRef.current = null;
           setIsRacing(false);
+          setRaceKey(k => k + 1);
         }
       }, 3000);
     } catch {
       setIsRacing(false);
+      setRaceKey(k => k + 1);
     }
   };
 
@@ -69,52 +74,77 @@ export default function Home() {
     if (!problem) return;
     setMemeTarget(r);
     const loser = results.find(x => x.model_id !== r.model_id && x.solved) ?? results[results.length - 1];
-    if (loser) {
-      setRoast(`${r.display_name} left ${loser.display_name} in the dust`);
-    }
+    if (loser) setRoast(`${r.display_name} left ${loser.display_name} in the dust`);
   };
+
+  const winner = results
+    .filter(r => !r.is_human && r.solved && r.time_ms != null)
+    .sort((a, b) => (a.time_ms ?? 0) - (b.time_ms ?? 0))[0] ?? null;
 
   const newModels = models.filter(m => m.is_new);
 
+  if (!problem) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-sm" style={{ color: "var(--muted)" }}>
+        loading...
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-2xl mx-auto min-h-screen flex flex-col">
-      <nav className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="font-black text-base">
-          how<span style={{ color: "#00ff41" }}>fast</span>would
-          <span style={{ color: "var(--muted)" }}>.com</span>
+    <div className="flex flex-col" style={{ height: "100dvh" }}>
+
+      {/* Nav */}
+      <nav
+        className="flex items-center gap-4 px-5 shrink-0 border-b"
+        style={{ height: "44px", background: "var(--surface)", borderColor: "var(--border)" }}
+      >
+        <div className="font-extrabold text-sm whitespace-nowrap" style={{ color: "var(--text)" }}>
+          howfast<span style={{ color: "var(--orange)" }}>would</span>.com
         </div>
-        <div className="flex gap-4 text-xs" style={{ color: "var(--muted)" }}>
-          <span>leaderboard</span>
-          <span>history</span>
-          <span>about</span>
+        <SearchBar onSelect={loadProblem} onRandom={loadRandom} />
+        <div className="hidden lg:flex gap-5 text-sm ml-auto" style={{ color: "var(--muted)" }}>
+          <span>Leaderboard</span>
+          <span>About</span>
         </div>
       </nav>
 
-      <SearchBar onSelect={loadProblem} onRandom={loadRandom} />
+      {/* Content */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
-      {problem && (
-        <>
-          <ProblemHeader problem={problem} newModels={newModels} />
-          <YouBanner
-            problemId={problem.id}
-            onSolve={(ms) => setUserResult({ ms, gaveUp: false })}
-            onGiveUp={(ms) => setUserResult({ ms, gaveUp: true })}
+        {/* Left panel — problem info + leaderboard */}
+        <div
+          className="w-full lg:w-[420px] lg:flex-shrink-0 lg:border-r lg:overflow-y-auto flex flex-col"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <ProblemHeader
+            problem={problem}
+            newModels={newModels}
+            solved={userResult !== null && !userResult.gaveUp}
+            onRaceAgain={handleRaceAgain}
+            isRacing={isRacing}
           />
+          {winner && <WinnerCard winner={winner} />}
           <RaceResults
             results={results}
             userResult={userResult}
             onSelectResult={handleSelectResult}
-            onRaceAgain={handleRaceAgain}
-            isRacing={isRacing}
           />
-        </>
-      )}
-
-      {!problem && (
-        <div className="flex-1 flex items-center justify-center text-sm" style={{ color: "var(--muted)" }}>
-          loading...
         </div>
-      )}
+
+        {/* Right panel — race editor */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <RaceEditor
+            key={raceKey}
+            problem={problem}
+            results={results}
+            onSolve={(ms) => setUserResult({ ms, gaveUp: false })}
+            onGiveUp={(ms) => setUserResult({ ms, gaveUp: true })}
+            userResult={userResult}
+          />
+        </div>
+
+      </div>
 
       {memeTarget && problem && (
         <MemeCard

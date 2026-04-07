@@ -1,7 +1,7 @@
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 
-pub async fn init(database_url: &str) -> anyhow::Result<SqlitePool> {
-    let pool = SqlitePoolOptions::new()
+pub async fn init(database_url: &str) -> anyhow::Result<PgPool> {
+    let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(database_url)
         .await?;

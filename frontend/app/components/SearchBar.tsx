@@ -37,8 +37,8 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
       <input
         className="w-full rounded px-3 py-1.5 text-sm outline-none"
         style={{
-          background: "#3a3a3a",
-          border: "1px solid #4a4a4a",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
           color: "var(--text)",
         }}
         placeholder="Search problems… Two Sum, #42, Hard"
@@ -49,7 +49,7 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
       <button
         onClick={onRandom}
         className="rounded px-3 py-1.5 text-sm flex-shrink-0"
-        style={{ background: "#3a3a3a", border: "1px solid #4a4a4a", color: "var(--text)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)" }}
       >
         🎲
       </button>

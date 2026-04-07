@@ -3,10 +3,6 @@ name = "howfastwould-backend"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "server"
-path = "src/main.rs"
-
 [dependencies]
 axum = { version = "0.7", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }

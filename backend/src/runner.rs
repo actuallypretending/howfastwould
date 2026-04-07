@@ -133,10 +133,11 @@ impl Runner {
 
     async fn call_model(&self, model: &Model, api_key: &str, prompt: &str) -> Result<String> {
         let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt)?;
+        let auth_value = auth_header_value(&model.provider, api_key);
         let resp: Value = self.http
             .post(&url)
             .header("Content-Type", "application/json")
-            .header(auth_header(&model.provider), api_key)
+            .header(auth_header_name(&model.provider), auth_value)
             .json(&body)
             .send().await?
             .json().await?;
@@ -227,11 +228,21 @@ fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &
     }
 }
 
-fn auth_header(provider: &str) -> &'static str {
+/// Returns the header name to use for authentication.
+fn auth_header_name(provider: &str) -> &'static str {
     match provider {
         "anthropic" => "x-api-key",
         "google" => "x-goog-api-key",
         _ => "Authorization",
+    }
+}
+
+/// Returns the header value to use for authentication.
+/// OpenAI-compatible providers expect `Bearer <key>`; others use the raw key.
+fn auth_header_value(provider: &str, api_key: &str) -> String {
+    match provider {
+        "anthropic" | "google" => api_key.to_string(),
+        _ => format!("Bearer {}", api_key),
     }
 }
 

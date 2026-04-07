@@ -26,6 +26,15 @@ pub async fn create(
     State(state): State<AppState>,
     Json(body): Json<CreateRaceBody>,
 ) -> Result<Json<CreateRaceResponse>, StatusCode> {
+    // Validate that problem_id looks like a UUID (36 chars, hyphen-separated hex groups).
+    // This prevents passing arbitrarily long strings to the database and rejects obviously
+    // invalid inputs before hitting the DB.
+    if body.problem_id.len() != 36
+        || !body.problem_id.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let race_id = Uuid::new_v4().to_string();
 
     let problem = sqlx::query_as!(

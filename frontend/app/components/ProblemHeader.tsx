@@ -1,3 +1,4 @@
+"use client";
 import { Problem, Model } from "@/app/lib/types";
 
 interface Props {

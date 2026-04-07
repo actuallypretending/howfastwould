@@ -15,6 +15,7 @@ export default function Home() {
   const [models, setModels] = useState<Model[]>([]);
   const [isRacing, setIsRacing] = useState(false);
   const [userResult, setUserResult] = useState<{ ms: number; gaveUp: boolean } | null>(null);
+  const [raceKey, setRaceKey] = useState(0);
   const [memeTarget, setMemeTarget] = useState<RaceResultWithModel | null>(null);
   const [roast, setRoast] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,6 +45,7 @@ export default function Home() {
   const handleRaceAgain = async () => {
     if (!problem || isRacing) return;
     setIsRacing(true);
+    setUserResult(null);
     try {
       await createRace(problem.id);
       let attempts = 0;
@@ -59,10 +61,12 @@ export default function Home() {
           clearInterval(pollRef.current!);
           pollRef.current = null;
           setIsRacing(false);
+          setRaceKey(k => k + 1);
         }
       }, 3000);
     } catch {
       setIsRacing(false);
+      setRaceKey(k => k + 1);
     }
   };
 
@@ -131,6 +135,7 @@ export default function Home() {
         {/* Right panel — race editor */}
         <div className="flex-1 flex flex-col min-h-0">
           <RaceEditor
+            key={raceKey}
             problem={problem}
             results={results}
             onSolve={(ms) => setUserResult({ ms, gaveUp: false })}

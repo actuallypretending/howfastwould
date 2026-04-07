@@ -115,7 +115,7 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
         });
       })()}
 
-      {/* Avg human row — always last */}
+      {/* Avg human row — always shown as a joke reference; real human data filtered above */}
       <div className="px-5 py-2.5" style={{ background: "rgba(239,71,67,0.04)" }}>
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-xs w-4">👤</span>

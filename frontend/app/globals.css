@@ -17,7 +17,3 @@ body {
   color: var(--text);
   font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
 }
-
-.difficulty-easy  { color: var(--green); background: rgba(0,184,163,0.1); }
-.difficulty-medium { color: var(--orange); background: rgba(255,161,22,0.1); }
-.difficulty-hard  { color: var(--red); background: rgba(239,71,67,0.1); }

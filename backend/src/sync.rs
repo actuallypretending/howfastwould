@@ -165,8 +165,11 @@ pub async fn run_benchmark_batch(pool: &PgPool, config: Arc<Config>) -> Result<(
             sqlx::query!(
                 r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
                    VALUES ($1, $2, $3, $4, $5, $6, $7)
-                   ON CONFLICT (id) DO UPDATE SET
-                   problem_id=$2, model_id=$3, solved=$4, time_ms=$5, attempts=$6, run_at=$7"#,
+                   ON CONFLICT (problem_id, model_id) DO UPDATE SET
+                       solved = EXCLUDED.solved,
+                       time_ms = EXCLUDED.time_ms,
+                       attempts = EXCLUDED.attempts,
+                       run_at = EXCLUDED.run_at"#,
                 result.id, result.problem_id, result.model_id, result.solved,
                 result.time_ms, result.attempts, result.run_at
             ).execute(pool).await.ok();

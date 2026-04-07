@@ -99,7 +99,11 @@ pub async fn results(
                     sqlx::query!(
                         r#"INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)
                            VALUES ($1, $2, $3, $4, $5, $6, $7)
-                           ON CONFLICT (id) DO NOTHING"#,
+                           ON CONFLICT (problem_id, model_id) DO UPDATE SET
+                               solved = EXCLUDED.solved,
+                               time_ms = EXCLUDED.time_ms,
+                               attempts = EXCLUDED.attempts,
+                               run_at = EXCLUDED.run_at"#,
                         result.id, result.problem_id, result.model_id,
                         result.solved, result.time_ms, result.attempts, result.run_at
                     ).execute(&pool).await.ok();

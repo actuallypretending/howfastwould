@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO results (id, problem_id, model_id, solved, time_ms, attempts, run_at)\n                           VALUES ($1, $2, $3, $4, $5, $6, $7)\n                           ON CONFLICT (id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Bool",
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7d2692b98c6bafbcd67adc608607fcf950dec58e0b940dc4fb023543dcc699a8"
+}

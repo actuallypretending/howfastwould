@@ -32,48 +32,54 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const diffColor = (d: string) =>
-    d === "Easy" ? "#00ff41" : d === "Medium" ? "#ffaa00" : "#ff4444";
-
   return (
-    <div ref={ref} className="relative flex gap-2 px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-      <div
-        className="flex flex-1 items-center gap-2 rounded px-3 py-2 text-sm"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-      >
-        <span style={{ color: "var(--muted)" }}>$</span>
-        <input
-          className="flex-1 bg-transparent outline-none"
-          style={{ color: "var(--text)" }}
-          placeholder="search problem... Two Sum, #42, Hard, dp..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => results.length > 0 && setOpen(true)}
-        />
-      </div>
+    <div ref={ref} className="relative flex items-center gap-2 flex-1" style={{ maxWidth: "360px" }}>
+      <input
+        className="w-full rounded px-3 py-1.5 text-sm outline-none"
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          color: "var(--text)",
+        }}
+        placeholder="Search problems… Two Sum, #42, Hard"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => results.length > 0 && setOpen(true)}
+      />
       <button
         onClick={onRandom}
-        className="rounded px-3 py-2 text-sm"
+        className="rounded px-3 py-1.5 text-sm flex-shrink-0"
         style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)" }}
       >
-        🎲 random
+        🎲
       </button>
 
       {open && (
         <div
-          className="absolute left-5 right-0 top-full z-10 rounded-b text-sm"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: "none", marginRight: "80px" }}
+          className="absolute left-0 top-full z-20 rounded-b w-full text-sm mt-0.5"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           {results.map((p) => (
             <button
               key={p.id}
-              className="flex w-full items-center gap-3 px-3 py-2 text-left hover:brightness-150 border-b"
+              className="flex w-full items-center gap-3 px-3 py-2 text-left border-b"
               style={{ borderColor: "var(--border)" }}
               onClick={() => { onSelect(p); setOpen(false); setQuery(""); }}
             >
-              <span style={{ color: "var(--muted)" }}>#{p.lc_id}</span>
-              <span style={{ color: "var(--text)" }}>{p.title}</span>
-              <span style={{ color: diffColor(p.difficulty), marginLeft: "auto", fontSize: "11px" }}>{p.difficulty}</span>
+              <span className="text-xs flex-shrink-0" style={{ color: "var(--muted)" }}>#{p.lc_id}</span>
+              <span className="flex-1 truncate" style={{ color: "var(--text)" }}>{p.title}</span>
+              <span
+                className="text-xs flex-shrink-0"
+                style={
+                  p.difficulty === "Easy"
+                    ? { color: "var(--green)" }
+                    : p.difficulty === "Medium"
+                    ? { color: "var(--orange)" }
+                    : { color: "var(--red)" }
+                }
+              >
+                {p.difficulty}
+              </span>
             </button>
           ))}
         </div>

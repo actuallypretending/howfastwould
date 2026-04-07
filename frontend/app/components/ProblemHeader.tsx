@@ -33,28 +33,29 @@ export default function ProblemHeader({ problem, newModels, solved, onRaceAgain,
             Solved
           </span>
         )}
-        {newModels.length > 0 && (
-          <span
-            className="ml-auto text-xs rounded px-2 py-0.5"
-            style={{ background: "#1a1a00", color: "#ffdd57" }}
+        <div className="ml-auto flex items-center gap-2">
+          {newModels.length > 0 && (
+            <span
+              className="text-xs rounded px-2 py-0.5"
+              style={{ background: "#1a1a00", color: "#ffdd57" }}
+            >
+              🆕 {newModels[0].display_name} just dropped
+            </span>
+          )}
+          <button
+            onClick={onRaceAgain}
+            disabled={isRacing}
+            className="text-xs rounded px-2 py-0.5"
+            style={{
+              color: isRacing ? "var(--muted)" : "var(--orange)",
+              border: `1px solid ${isRacing ? "var(--border)" : "var(--orange)"}`,
+              background: "transparent",
+              cursor: isRacing ? "not-allowed" : "pointer",
+            }}
           >
-            🆕 {newModels[0].display_name} just dropped
-          </span>
-        )}
-        <button
-          onClick={onRaceAgain}
-          disabled={isRacing}
-          className="text-xs rounded px-2 py-0.5"
-          style={{
-            color: isRacing ? "var(--muted)" : "var(--orange)",
-            border: `1px solid ${isRacing ? "var(--border)" : "var(--orange)"}`,
-            background: "transparent",
-            cursor: isRacing ? "not-allowed" : "pointer",
-            marginLeft: newModels.length > 0 ? "0" : "auto",
-          }}
-        >
-          {isRacing ? "running…" : "▶ re-run benchmarks"}
-        </button>
+            {isRacing ? "running…" : "▶ re-run benchmarks"}
+          </button>
+        </div>
       </div>
       <div className="text-xl font-bold mb-1" style={{ color: "var(--text)" }}>
         {problem.title}

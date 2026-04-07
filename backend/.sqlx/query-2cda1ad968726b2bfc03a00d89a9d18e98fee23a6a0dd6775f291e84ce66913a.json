@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM models WHERE is_active = true ORDER BY is_human, provider, name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "api_key_env",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_new",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "is_human",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "human_times",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "added_at",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "2cda1ad968726b2bfc03a00d89a9d18e98fee23a6a0dd6775f291e84ce66913a"
+}

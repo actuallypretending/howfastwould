@@ -91,7 +91,7 @@ async fn upsert_model(
 
 pub async fn seed_initial_models(pool: &PgPool) -> Result<()> {
     let count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM models")
-        .fetch_one(pool).await?;
+        .fetch_one(pool).await?.unwrap_or(0);
 
     if count > 0 { return Ok(()); }
 

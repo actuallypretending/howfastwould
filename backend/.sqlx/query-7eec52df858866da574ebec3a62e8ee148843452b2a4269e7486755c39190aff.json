@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, added_at) VALUES ($1, $2, $3, $4, $5, true, true, false, $6) ON CONFLICT (name) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7eec52df858866da574ebec3a62e8ee148843452b2a4269e7486755c39190aff"
+}

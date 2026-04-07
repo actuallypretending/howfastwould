@@ -78,15 +78,12 @@ async fn upsert_model(
     api_key_env: &str,
     now: &str,
 ) -> Result<()> {
-    let existing = sqlx::query!("SELECT id FROM models WHERE name = $1", name)
-        .fetch_optional(pool).await?;
-
-    if existing.is_none() {
-        let id = Uuid::new_v4().to_string();
-        sqlx::query!(
-            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, added_at) VALUES ($1, $2, $3, $4, $5, true, true, false, $6)",
-            id, provider, name, display_name, api_key_env, now
-        ).execute(pool).await?;
+    let id = Uuid::new_v4().to_string();
+    let result = sqlx::query!(
+        "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, added_at) VALUES ($1, $2, $3, $4, $5, true, true, false, $6) ON CONFLICT (name) DO NOTHING",
+        id, provider, name, display_name, api_key_env, now
+    ).execute(pool).await?;
+    if result.rows_affected() > 0 {
         tracing::info!("new model discovered: {} ({})", name, provider);
     }
     Ok(())

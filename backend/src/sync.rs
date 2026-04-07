@@ -90,11 +90,6 @@ async fn upsert_model(
 }
 
 pub async fn seed_initial_models(pool: &PgPool) -> Result<()> {
-    let count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM models")
-        .fetch_one(pool).await?.unwrap_or(0);
-
-    if count > 0 { return Ok(()); }
-
     let now = Utc::now().to_rfc3339();
     let models: &[(&str, &str, &str, &str, bool)] = &[
         ("openai", "gpt-4.5", "GPT-4.5", "OPENAI_API_KEY", false),
@@ -114,6 +109,11 @@ pub async fn seed_initial_models(pool: &PgPool) -> Result<()> {
         ("moonshot", "moonshot-v1-8k", "🐉 Kimi k1.5", "MOONSHOT_API_KEY", false),
         ("doubao", "doubao-pro-32k", "🐉 Doubao", "DOUBAO_API_KEY", false),
         ("hunyuan", "hunyuan-standard", "🐉 Hunyuan", "HUNYUAN_API_KEY", false),
+        ("groq", "llama-3.3-70b-versatile", "Llama 3.3 70B", "GROQ_API_KEY", false),
+        ("groq", "mixtral-8x7b-32768", "Mixtral 8x7B", "GROQ_API_KEY", false),
+        ("github", "gpt-4o-mini", "GPT-4o mini", "GITHUB_TOKEN", false),
+        ("github", "Meta-Llama-3-70B-Instruct", "Llama 3 70B", "GITHUB_TOKEN", false),
+        ("cloudflare", "@cf/meta/llama-3.1-8b-instruct", "Llama 3.1 8B", "CF_API_TOKEN", false),
         ("human", "lc-avg", "👤 LeetCode Avg", "", true),
         ("human", "neetcode", "👤 NeetCode", "", true),
         ("human", "tourist", "👤 Tourist", "", true),
@@ -131,7 +131,7 @@ pub async fn seed_initial_models(pool: &PgPool) -> Result<()> {
         } else { None };
 
         sqlx::query!(
-            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, human_times, added_at) VALUES ($1, $2, $3, $4, $5, true, false, $6, $7, $8)",
+            "INSERT INTO models (id, provider, name, display_name, api_key_env, is_active, is_new, is_human, human_times, added_at) VALUES ($1, $2, $3, $4, $5, true, false, $6, $7, $8) ON CONFLICT (name) DO NOTHING",
             id, provider, name, display, key_env, is_human, human_times, now
         ).execute(pool).await?;
     }

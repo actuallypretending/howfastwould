@@ -132,7 +132,8 @@ impl Runner {
     }
 
     async fn call_model(&self, model: &Model, api_key: &str, prompt: &str) -> Result<String> {
-        let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt)?;
+        let cf_account_id = std::env::var("CF_ACCOUNT_ID").unwrap_or_default();
+        let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt, &cf_account_id)?;
         let auth_value = auth_header_value(&model.provider, api_key);
         let resp: Value = self.http
             .post(&url)
@@ -184,15 +185,17 @@ fn build_retry_prompt(title: &str, description: &str, starter: &str, error: &str
     )
 }
 
-fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &str) -> Result<(String, Value)> {
+fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &str, cf_account_id: &str) -> Result<(String, Value)> {
     match provider {
-        "openai" | "xai" | "fireworks" | "deepseek" | "mistral" => {
+        "openai" | "xai" | "fireworks" | "deepseek" | "mistral" | "groq" | "github" => {
             let base = match provider {
                 "openai" => "https://api.openai.com/v1",
                 "xai" => "https://api.x.ai/v1",
                 "fireworks" => "https://api.fireworks.ai/inference/v1",
                 "deepseek" => "https://api.deepseek.com/v1",
                 "mistral" => "https://api.mistral.ai/v1",
+                "groq" => "https://api.groq.com/openai/v1",
+                "github" => "https://models.inference.ai.azure.com",
                 _ => unreachable!(),
             };
             Ok((
@@ -208,6 +211,15 @@ fn build_api_request(provider: &str, model_name: &str, _api_key: &str, prompt: &
             format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent", model_name),
             json!({ "contents": [{"parts": [{"text": prompt}]}] })
         )),
+        "cloudflare" => {
+            Ok((
+                format!(
+                    "https://api.cloudflare.com/client/v4/accounts/{}/ai/run/{}",
+                    cf_account_id, model_name
+                ),
+                json!({ "messages": [{"role":"user","content": prompt}], "max_tokens": 2048 })
+            ))
+        },
         "qwen" => Ok((
             "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation".into(),
             json!({ "model": model_name, "input": { "messages": [{"role":"user","content": prompt}] } })
@@ -252,6 +264,7 @@ fn extract_code(resp: &Value, provider: &str) -> Result<String> {
         "google" => resp["candidates"][0]["content"]["parts"][0]["text"].as_str().unwrap_or(""),
         "qwen" => resp["output"]["text"].as_str().unwrap_or(""),
         "hunyuan" => resp["Choices"][0]["Message"]["Content"].as_str().unwrap_or(""),
+        "cloudflare" => resp["result"]["response"].as_str().unwrap_or(""),
         _ => resp["choices"][0]["message"]["content"].as_str().unwrap_or(""),
     };
 
@@ -268,4 +281,63 @@ fn extract_code(resp: &Value, provider: &str) -> Result<String> {
         }
     }
     Ok(text.trim().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_api_request_groq() {
+        let (url, body) = build_api_request("groq", "llama-3.3-70b-versatile", "", "test", "").unwrap();
+        assert_eq!(url, "https://api.groq.com/openai/v1/chat/completions");
+        assert_eq!(body["model"], "llama-3.3-70b-versatile");
+        assert!(body["messages"].is_array());
+    }
+
+    #[test]
+    fn test_build_api_request_github() {
+        let (url, body) = build_api_request("github", "gpt-4o-mini", "", "test", "").unwrap();
+        assert_eq!(url, "https://models.inference.ai.azure.com/chat/completions");
+        assert_eq!(body["model"], "gpt-4o-mini");
+    }
+
+    #[test]
+    fn test_build_api_request_cloudflare() {
+        let (url, _) = build_api_request("cloudflare", "@cf/meta/llama-3.1-8b-instruct", "", "test", "abc123").unwrap();
+        assert!(url.contains("abc123"), "URL should contain account ID");
+        assert!(url.contains("llama-3.1-8b-instruct"), "URL should contain model name");
+    }
+
+    #[test]
+    fn test_build_api_request_unknown_provider_errors() {
+        let result = build_api_request("notreal", "model", "", "test", "");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_extract_code_cloudflare() {
+        let resp = serde_json::json!({
+            "result": { "response": "def solution():\n    return 42" },
+            "success": true
+        });
+        let code = extract_code(&resp, "cloudflare").unwrap();
+        assert_eq!(code, "def solution():\n    return 42");
+    }
+
+    #[test]
+    fn test_extract_code_cloudflare_with_code_fence() {
+        let resp = serde_json::json!({
+            "result": { "response": "```python\ndef solution():\n    return 42\n```" }
+        });
+        let code = extract_code(&resp, "cloudflare").unwrap();
+        assert_eq!(code, "def solution():\n    return 42");
+    }
+
+    #[test]
+    fn test_extract_code_cloudflare_missing_field() {
+        let resp = serde_json::json!({ "result": {} });
+        let code = extract_code(&resp, "cloudflare").unwrap();
+        assert_eq!(code, "");
+    }
 }

@@ -39,3 +39,5 @@ CREATE TABLE IF NOT EXISTS races (
     started_at  TEXT NOT NULL,
     finished_at TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_results_problem_id ON results(problem_id);

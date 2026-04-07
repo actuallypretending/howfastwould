@@ -28,7 +28,7 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
   if (userResult) {
     const insertAt = userResult.gaveUp
       ? withUser.length
-      : withUser.findIndex(r => r.solved && (r.time_ms ?? 0) > userResult.ms);
+      : withUser.findIndex(r => !("isUser" in r) && r.solved && (r.time_ms ?? 0) > userResult.ms);
     const idx = insertAt === -1 ? withUser.length : insertAt;
     withUser.splice(idx, 0, { isUser: true, ...userResult });
   }

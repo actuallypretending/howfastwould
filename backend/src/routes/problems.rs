@@ -135,6 +135,7 @@ pub async fn results(
             ).fetch_optional(&state.pool).await.ok().flatten();
 
             if let Some(diff) = difficulty {
+                tracing::info!("seeding {} approximate results for problem '{}'", missing.len(), id);
                 let seeded = seed_approximate_results(&state.pool, &id, &diff, &missing).await;
                 let mut all_results = results;
                 all_results.extend(seeded);
@@ -223,9 +224,9 @@ async fn seed_approximate_results(
             _ => (med_ms, med_rate),
         };
 
-        // Deterministic jitter: 0.7x to 1.3x
+        // Deterministic jitter: 0.7x to 1.3x with fine granularity
         let h = hash_pair(&model.id, problem_id);
-        let jitter = 0.7 + ((h % 7) as f64) * 0.1;
+        let jitter = 0.7 + ((h % 601) as f64) * 0.001;
         let time_ms = (base_ms as f64 * jitter) as i64;
 
         // Deterministic solve coin flip

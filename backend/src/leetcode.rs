@@ -93,7 +93,7 @@ impl LeetcodeClient {
             .unwrap_or("class Solution:\n    pass")
             .to_string();
 
-        let test_cases = self.parse_test_cases(&q["exampleTestcaseList"]);
+        let test_cases = self.parse_test_cases(&q["exampleTestcaseList"], &description);
 
         Ok(Problem {
             id: Uuid::new_v4().to_string(),
@@ -108,7 +108,7 @@ impl LeetcodeClient {
         })
     }
 
-    fn parse_test_cases(&self, example_list: &Value) -> Vec<TestCase> {
+    fn parse_test_cases(&self, example_list: &Value, content: &str) -> Vec<TestCase> {
         let inputs: Vec<String> = example_list
             .as_array()
             .map(|arr| arr.iter()
@@ -116,9 +116,16 @@ impl LeetcodeClient {
                 .collect())
             .unwrap_or_default();
 
-        inputs.iter().map(|input| TestCase {
+        // Extract expected outputs from HTML content.
+        // Pattern: <strong>Output:</strong> VALUE (up to next newline or <)
+        let re = regex::Regex::new(r#"<strong>Output:</strong>\s*(.+?)(?:\s*<|$)"#).unwrap();
+        let outputs: Vec<String> = re.captures_iter(content)
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str().trim().to_string()))
+            .collect();
+
+        inputs.iter().enumerate().map(|(i, input)| TestCase {
             input: input.clone(),
-            expected_output: String::new(),
+            expected_output: outputs.get(i).cloned().unwrap_or_default(),
         }).collect()
     }
 }

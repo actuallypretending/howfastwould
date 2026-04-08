@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTimer } from "@/app/hooks/useTimer";
 import { formatTime } from "@/app/lib/api";
 import { Problem, RaceResultWithModel } from "@/app/lib/types";
+import ProblemPanel from "./ProblemPanel";
 
 interface Props {
   problem: Problem;
@@ -46,6 +47,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const [code, setCode] = useState(problem.starter_code ?? "");
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { state: timerState, elapsedMs, start, stop, reset } = useTimer();
+  const [showProblem, setShowProblem] = useState(false);
 
   const topAIs = useMemo(() => getTopAIs(results), [results]);
 
@@ -72,7 +74,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     topAIs.forEach(ai => {
       const t = setTimeout(() => {
         setSolvedIds(prev => new Set([...prev, ai.model_id]));
-      }, ai.time_ms!);
+      }, ai.time_ms ?? 0);
       timeoutRefs.current.push(t);
     });
   }, [phase, start, topAIs]);
@@ -103,7 +105,30 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const userPct = phase === "idle" ? 0 : scaleRef > 0 ? (currentUserMs / scaleRef) * 100 : 0;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full">
+      {/* Problem panel — desktop: 40% side-by-side, mobile: toggleable overlay */}
+      <div className="hidden lg:flex lg:w-[40%] lg:flex-shrink-0">
+        <ProblemPanel problem={problem} />
+      </div>
+      {/* Mobile problem panel */}
+      {showProblem && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg, #1a1a1a)" }}>
+          <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "var(--border)" }}>
+            <span className="text-sm font-bold" style={{ color: "var(--text)" }}>Problem</span>
+            <button
+              onClick={() => setShowProblem(false)}
+              className="text-xs px-2 py-1 rounded"
+              style={{ color: "var(--muted)", background: "#3a3a3a", cursor: "pointer" }}
+            >
+              Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <ProblemPanel problem={problem} />
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col flex-1 min-w-0">
 
       {/* Race panel */}
       <div className="px-5 py-3 border-b" style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}>
@@ -158,7 +183,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
                         ? "width 0.1s linear"
                         : phase === "idle"
                         ? "none"
-                        : `width ${(ai.time_ms! / 1000).toFixed(2)}s linear`,
+                        : `width ${Math.max(0.3, (ai.time_ms ?? 0) / 1000).toFixed(2)}s linear`,
                     }}
                   />
                 </div>
@@ -203,6 +228,13 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           <option>Java</option>
           <option>C++</option>
         </select>
+        <button
+          onClick={() => setShowProblem(true)}
+          className="lg:hidden text-xs px-2 py-1 rounded"
+          style={{ color: "var(--orange)", background: "#3a3a3a", cursor: "pointer" }}
+        >
+          View Problem
+        </button>
         {phase === "idle" && (
           <span className="text-xs ml-auto" style={{ color: "#555", fontStyle: "italic" }}>
             Start typing to begin the race.
@@ -254,6 +286,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
         )}
       </div>
 
+      </div>
     </div>
   );
 }

@@ -37,6 +37,6 @@ pub fn router(pool: PgPool, config: Arc<Config>) -> Router {
         .route("/leaderboard", get(models::leaderboard))
         .route("/run", post(execution::run_code))
         .route("/submit", post(execution::submit_code))
-        .route("/results/{id}/details", get(execution::result_details))
+        .route("/results/:id/details", get(execution::result_details))
         .with_state(state)
 }

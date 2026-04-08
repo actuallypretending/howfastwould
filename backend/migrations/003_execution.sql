@@ -19,4 +19,4 @@ CREATE TABLE execution_details (
     stderr       TEXT NOT NULL DEFAULT ''
 );
 
-CREATE INDEX idx_execution_details_result_id ON execution_details(result_id);
+CREATE UNIQUE INDEX idx_execution_details_result_id ON execution_details(result_id);

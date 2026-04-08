@@ -127,7 +127,11 @@ pub async fn results(
                                 let detail_id = Uuid::new_v4().to_string();
                                 sqlx::query(
                                     r#"INSERT INTO execution_details (id, result_id, code, test_results, stderr)
-                                       VALUES ($1, $2, $3, $4, $5)"#,
+                                       VALUES ($1, $2, $3, $4, $5)
+                                       ON CONFLICT (result_id) DO UPDATE SET
+                                       code = EXCLUDED.code,
+                                       test_results = EXCLUDED.test_results,
+                                       stderr = EXCLUDED.stderr"#,
                                 )
                                 .bind(&detail_id)
                                 .bind(&result.id)

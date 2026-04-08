@@ -21,6 +21,14 @@ impl RateLimiter {
     /// Returns Ok(()) if allowed, Err(seconds_until_reset) if rate-limited.
     pub fn check(&self, ip: IpAddr) -> Result<(), u64> {
         let now = Instant::now();
+
+        // Opportunistic cleanup: evict stale entries when map grows large
+        if self.map.len() > 10_000 {
+            self.map.retain(|_, (_, window_start)| {
+                now.duration_since(*window_start).as_secs() < self.window_secs * 2
+            });
+        }
+
         let mut entry = self.map.entry(ip).or_insert((0, now));
         let (count, window_start) = entry.value_mut();
 

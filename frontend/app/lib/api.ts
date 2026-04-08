@@ -66,7 +66,8 @@ export async function runCode(code: string, problemId: string): Promise<RunResul
     body: JSON.stringify({ code, problem_id: problemId }),
   });
   if (res.status === 429) {
-    throw new RateLimitError(60);
+    const data = await res.json().catch(() => ({}));
+    throw new RateLimitError(data.retry_after ?? 60);
   }
   if (!res.ok) throw new Error("failed to run code");
   return res.json();
@@ -84,7 +85,8 @@ export async function submitCode(
     body: JSON.stringify({ code, problem_id: problemId, time_ms: timeMs, attempts }),
   });
   if (res.status === 429) {
-    throw new RateLimitError(60);
+    const data = await res.json().catch(() => ({}));
+    throw new RateLimitError(data.retry_after ?? 60);
   }
   if (!res.ok) throw new Error("failed to submit code");
   return res.json();

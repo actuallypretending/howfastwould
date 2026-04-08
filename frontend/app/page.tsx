@@ -21,13 +21,42 @@ export default function Home() {
   const [roast, setRoast] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const pollForResults = useCallback((problemId: string, currentCount: number) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    let attempts = 0;
+    let stableCount = 0;
+    let lastCount = currentCount;
+    pollRef.current = setInterval(async () => {
+      const r = await fetchProblemResults(problemId);
+      setResults(r);
+      attempts++;
+      if (r.length > lastCount) { lastCount = r.length; stableCount = 0; }
+      else { stableCount++; }
+      if (attempts > 40 || stableCount >= 3) {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setIsRacing(false);
+        setRaceKey(k => k + 1);
+      }
+    }, 3000);
+  }, []);
+
+  const modelsRef = useRef<Model[]>([]);
+  modelsRef.current = models;
+
   const loadProblem = useCallback(async (p: Problem) => {
     setProblem(p);
     setUserResult(null);
     setMemeTarget(null);
     const r = await fetchProblemResults(p.id);
     setResults(r);
-  }, []);
+    // Auto-poll if results look incomplete (fewer than active non-human models)
+    const activeAICount = modelsRef.current.filter(m => !m.is_human && m.is_active).length;
+    if (r.length < activeAICount && activeAICount > 0) {
+      setIsRacing(true);
+      pollForResults(p.id, r.length);
+    }
+  }, [pollForResults]);
 
   const loadRandom = useCallback(async () => {
     const p = await fetchRandomProblem();
@@ -35,8 +64,8 @@ export default function Home() {
   }, [loadProblem]);
 
   useEffect(() => {
-    loadRandom();
-    fetchModels().then(setModels);
+    // Fetch models first so loadProblem can check active model count for auto-poll
+    fetchModels().then(setModels).then(loadRandom);
   }, [loadRandom]);
 
   useEffect(() => {
@@ -49,22 +78,7 @@ export default function Home() {
     setUserResult(null);
     try {
       await createRace(problem.id);
-      let attempts = 0;
-      let stableCount = 0;
-      let lastCount = results.length;
-      pollRef.current = setInterval(async () => {
-        const r = await fetchProblemResults(problem.id);
-        setResults(r);
-        attempts++;
-        if (r.length > lastCount) { lastCount = r.length; stableCount = 0; }
-        else { stableCount++; }
-        if (attempts > 40 || stableCount >= 3) {
-          clearInterval(pollRef.current!);
-          pollRef.current = null;
-          setIsRacing(false);
-          setRaceKey(k => k + 1);
-        }
-      }, 3000);
+      pollForResults(problem.id, results.length);
     } catch {
       setIsRacing(false);
       setRaceKey(k => k + 1);

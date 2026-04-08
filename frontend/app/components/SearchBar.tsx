@@ -33,7 +33,7 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
   }, []);
 
   return (
-    <div ref={ref} className="relative flex items-center gap-2 flex-1" style={{ maxWidth: "360px" }}>
+    <div ref={ref} className="relative flex items-center gap-2 flex-1 max-w-[360px] 2xl:max-w-[480px]">
       <input
         className="w-full rounded px-3 py-1.5 text-sm outline-none search-input"
         style={{

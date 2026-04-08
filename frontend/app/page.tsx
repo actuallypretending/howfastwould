@@ -97,7 +97,7 @@ export default function Home() {
 
       {/* Nav */}
       <nav
-        className="flex items-center gap-4 px-5 shrink-0 border-b"
+        className="flex items-center gap-4 px-5 2xl:px-8 shrink-0 border-b"
         style={{ height: "44px", background: "var(--surface)", borderColor: "var(--border)" }}
       >
         <div className="font-extrabold text-sm whitespace-nowrap" style={{ color: "var(--text)" }}>
@@ -115,7 +115,7 @@ export default function Home() {
 
         {/* Left panel — problem info + leaderboard */}
         <div
-          className="w-full lg:w-[420px] lg:flex-shrink-0 lg:border-r lg:overflow-y-auto flex flex-col"
+          className="w-full lg:w-[420px] 2xl:w-[520px] lg:flex-shrink-0 lg:border-r lg:overflow-y-auto flex flex-col"
           style={{ borderColor: "var(--border)" }}
         >
           <ProblemHeader

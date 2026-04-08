@@ -96,11 +96,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
 
   const roastText = getRoastText(phase, solvedIds, topAIs);
   const maxAITime = topAIs.length > 0 ? (topAIs[topAIs.length - 1].time_ms ?? 1) : 1;
-  const userPct = timerState === "running" && maxAITime > 0
-    ? Math.min(100, (elapsedMs / maxAITime) * 100)
-    : timerState === "stopped"
-    ? Math.min(100, ((userResult?.ms ?? elapsedMs) / maxAITime) * 100)
-    : 0;
+  // Use user's elapsed time as the scale reference — user bar stays at 100%,
+  // AI bars shrink as the user takes longer relative to their solve time
+  const currentUserMs = timerState === "stopped" && userResult ? userResult.ms : elapsedMs;
+  const scaleRef = Math.max(currentUserMs, maxAITime);
+  const userPct = phase === "idle" ? 0 : scaleRef > 0 ? (currentUserMs / scaleRef) * 100 : 0;
 
   return (
     <div className="flex flex-col h-full">
@@ -141,7 +141,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           {/* AI rows */}
           {topAIs.map(ai => {
             const solved = solvedIds.has(ai.model_id);
-            const targetPct = (ai.time_ms! / maxAITime) * 100;
+            const targetPct = scaleRef > 0 ? (ai.time_ms! / scaleRef) * 100 : 0;
             const isFinished = phase === "submitted";
             return (
               <div key={ai.model_id} className="flex items-center gap-3">
@@ -154,7 +154,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
                     style={{
                       width: phase === "idle" ? "0%" : `${targetPct}%`,
                       background: solved || isFinished ? "var(--orange)" : "#5c5c5c",
-                      transition: isFinished ? "none" : phase === "idle" ? "none" : `width ${(ai.time_ms! / 1000).toFixed(2)}s linear`,
+                      transition: "width 0.1s linear",
                     }}
                   />
                 </div>

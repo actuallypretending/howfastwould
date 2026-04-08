@@ -26,6 +26,10 @@ pub async fn create(
     State(state): State<AppState>,
     Json(body): Json<CreateRaceBody>,
 ) -> Result<Json<CreateRaceResponse>, StatusCode> {
+    if !state.config.enable_live_benchmarks {
+        return Err(StatusCode::SERVICE_UNAVAILABLE);
+    }
+
     // Validate that problem_id looks like a UUID (36 chars, hyphen-separated hex groups).
     // This prevents passing arbitrarily long strings to the database and rejects obviously
     // invalid inputs before hitting the DB.

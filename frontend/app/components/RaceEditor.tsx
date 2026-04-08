@@ -142,9 +142,10 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           {topAIs.map(ai => {
             const solved = solvedIds.has(ai.model_id);
             const targetPct = (ai.time_ms! / maxAITime) * 100;
+            const isFinished = phase === "submitted";
             return (
               <div key={ai.model_id} className="flex items-center gap-3">
-                <span className="text-xs font-semibold w-20 flex-shrink-0 truncate" style={{ color: solved ? "var(--orange)" : "var(--text)" }}>
+                <span className="text-xs font-semibold w-20 flex-shrink-0 truncate" style={{ color: solved || isFinished ? "var(--orange)" : "var(--text)" }}>
                   {ai.display_name}
                 </span>
                 <div className="flex-1 h-1.5 rounded overflow-hidden" style={{ background: "#3a3a3a" }}>
@@ -152,16 +153,16 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
                     className="h-full rounded"
                     style={{
                       width: phase === "idle" ? "0%" : `${targetPct}%`,
-                      background: solved ? "var(--orange)" : "#5c5c5c",
-                      transition: phase === "idle" ? "none" : `width ${(ai.time_ms! / 1000).toFixed(2)}s linear`,
+                      background: solved || isFinished ? "var(--orange)" : "#5c5c5c",
+                      transition: isFinished ? "none" : phase === "idle" ? "none" : `width ${(ai.time_ms! / 1000).toFixed(2)}s linear`,
                     }}
                   />
                 </div>
                 <span
                   className="text-xs font-bold w-14 text-right flex-shrink-0"
-                  style={{ color: solved ? "var(--orange)" : "#555", fontVariantNumeric: "tabular-nums" }}
+                  style={{ color: solved || isFinished ? "var(--orange)" : "#555", fontVariantNumeric: "tabular-nums" }}
                 >
-                  {phase === "idle" ? "–" : solved ? `${((ai.time_ms!) / 1000).toFixed(1)}s ✓` : "…"}
+                  {phase === "idle" ? "–" : solved || isFinished ? formatTime(ai.time_ms) : "…"}
                 </span>
               </div>
             );

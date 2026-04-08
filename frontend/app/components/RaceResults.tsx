@@ -9,6 +9,37 @@ interface Props {
   onSelectResult: (result: RaceResultWithModel) => void;
 }
 
+const humanRoasts: Record<string, string[]> = {
+  Easy: ["Probably alt-tabbing.", "Checking Stack Overflow first.", "Still reading the problem."],
+  Medium: ["Getting coffee first.", "Debating whether to brute force.", "Opened 12 browser tabs."],
+  Hard: ["Considering a career change.", "Praying to the DP gods.", "Questioning life choices."],
+};
+
+function HumanRow({ results }: { results: RaceResultWithModel[] }) {
+  const human = results.find(r => r.is_human && r.display_name.includes("LeetCode"));
+  const timeMs = human?.time_ms ?? 900_000;
+  const mins = Math.round(timeMs / 60_000);
+  const label = mins >= 60 ? `~${Math.round(mins / 60)}hr` : `~${mins} min`;
+
+  const difficulty = timeMs <= 900_000 ? "Easy" : timeMs <= 2_700_000 ? "Medium" : "Hard";
+  const pool = humanRoasts[difficulty];
+  const roast = pool[Math.floor(Math.random() * pool.length)];
+
+  return (
+    <div className="px-5 py-2.5" style={{ background: "rgba(239,71,67,0.04)" }}>
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-xs w-4">👤</span>
+        <span className="text-sm flex-1" style={{ color: "var(--muted)" }}>avg human</span>
+        <span className="text-sm font-bold" style={{ color: "var(--red)" }}>{label}</span>
+      </div>
+      <div className="ml-6 h-1.5 rounded overflow-hidden" style={{ background: "#2e2e2e" }}>
+        <div className="h-full rounded" style={{ width: "100%", background: "var(--red)", opacity: 0.35 }} />
+      </div>
+      <div className="ml-6 mt-1 text-xs" style={{ color: "var(--muted)" }}>{roast}</div>
+    </div>
+  );
+}
+
 export default function RaceResults({ results, userResult, onSelectResult }: Props) {
   const [expanded, setExpanded] = useState(false);
 
@@ -116,17 +147,7 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
       })()}
 
       {/* Avg human row — always shown as a joke reference; real human data filtered above */}
-      <div className="px-5 py-2.5" style={{ background: "rgba(239,71,67,0.04)" }}>
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-xs w-4">👤</span>
-          <span className="text-sm flex-1" style={{ color: "var(--muted)" }}>avg human</span>
-          <span className="text-sm font-bold" style={{ color: "var(--red)" }}>~15 min</span>
-        </div>
-        <div className="ml-6 h-1.5 rounded overflow-hidden" style={{ background: "#2e2e2e" }}>
-          <div className="h-full rounded" style={{ width: "100%", background: "var(--red)", opacity: 0.35 }} />
-        </div>
-        <div className="ml-6 mt-1 text-xs" style={{ color: "var(--muted)" }}>No comment.</div>
-      </div>
+      <HumanRow results={results} />
 
       {hasMore && (
         <button

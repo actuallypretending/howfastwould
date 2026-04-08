@@ -112,8 +112,8 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
           return (
             <button
               key={r.model_id}
-              className="w-full px-5 py-2.5 border-b text-left"
-              style={{ borderColor: "var(--border)" }}
+              className="w-full px-5 py-2.5 border-b text-left result-row"
+              style={{ borderColor: "var(--border)", cursor: "pointer", transition: "background 0.15s ease" }}
               onClick={() => onSelectResult(r)}
             >
               <div className="flex items-center gap-2 mb-1.5">

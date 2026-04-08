@@ -46,7 +46,7 @@ export default function ProblemHeader({ problem, newModels, solved, onRaceAgain,
           <button
             onClick={onRaceAgain}
             disabled={isRacing}
-            className="text-xs rounded px-2 py-0.5"
+            className="text-xs rounded px-2 py-0.5 btn-outline"
             style={{
               color: isRacing ? "var(--muted)" : "var(--orange)",
               border: `1px solid ${isRacing ? "var(--border)" : "var(--orange)"}`,

@@ -46,3 +46,14 @@ export interface RaceEvent {
 export interface CreateRaceResponse {
   race_id: string;
 }
+
+export interface LeaderboardEntry {
+  model_id: string;
+  display_name: string;
+  provider: string;
+  total: number;
+  solved: number;
+  avg_time_ms: number | null;
+  median_time_ms: number | null;
+  win_count: number;
+}

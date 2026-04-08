@@ -93,3 +93,15 @@ pub struct Race {
     pub started_at: String,
     pub finished_at: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct LeaderboardEntry {
+    pub model_id: String,
+    pub display_name: String,
+    pub provider: String,
+    pub total: i64,
+    pub solved: i64,
+    pub avg_time_ms: Option<i64>,
+    pub median_time_ms: Option<i64>,
+    pub win_count: i64,
+}

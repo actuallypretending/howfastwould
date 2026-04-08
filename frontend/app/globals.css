@@ -17,3 +17,40 @@ body {
   color: var(--text);
   font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
 }
+
+/* Hover states */
+button:not(:disabled):hover,
+.hoverable:hover {
+  filter: brightness(1.15);
+}
+
+.nav-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.nav-link:hover {
+  color: var(--orange) !important;
+}
+
+.result-row:hover {
+  background: rgba(255, 161, 22, 0.06) !important;
+}
+
+.search-input:focus {
+  border-color: var(--orange) !important;
+}
+
+.btn-outline:not(:disabled):hover {
+  background: var(--orange) !important;
+  color: #000 !important;
+  border-color: var(--orange) !important;
+}
+
+.dice-btn:hover {
+  background: rgba(255, 161, 22, 0.15) !important;
+  border-color: var(--orange) !important;
+}
+
+.search-result:hover {
+  background: rgba(255, 161, 22, 0.08) !important;
+}

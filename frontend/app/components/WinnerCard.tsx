@@ -30,7 +30,7 @@ export default function WinnerCard({ winner }: Props) {
       <div className="text-right flex-shrink-0">
         <div
           className="font-extrabold leading-none"
-          style={{ fontSize: "48px", color: "var(--orange)", letterSpacing: "-2px" }}
+          style={{ fontSize: "clamp(48px, 3.5vw, 72px)", color: "var(--orange)", letterSpacing: "-2px" }}
         >
           {formatTime(winner.time_ms)}
         </div>

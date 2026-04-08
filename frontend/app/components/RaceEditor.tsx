@@ -208,13 +208,13 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
 
       {/* Code editor */}
       <textarea
-        className="flex-1 px-4 py-3 text-sm 2xl:text-base outline-none resize-none min-h-0"
+        className="flex-1 px-4 py-3 text-sm outline-none resize-none min-h-0"
         style={{
           background: "#1e1e1e",
           color: "var(--text)",
           fontFamily: "'Courier New', monospace",
           lineHeight: "1.65",
-          minHeight: "200px",
+          minHeight: "12rem",
         }}
         value={code}
         onChange={handleInput}

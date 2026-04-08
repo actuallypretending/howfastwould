@@ -3,25 +3,25 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
-struct PistonRequest {
-    language: String,
-    version: String,
-    files: Vec<PistonFile>,
+struct Judge0Request {
+    language_id: u32,
+    source_code: String,
     stdin: String,
 }
 
-#[derive(Serialize)]
-struct PistonFile {
-    name: String,
-    content: String,
+#[derive(Deserialize)]
+struct Judge0Response {
+    stdout: Option<String>,
+    stderr: Option<String>,
+    compile_output: Option<String>,
+    status: Judge0Status,
 }
 
 #[derive(Deserialize)]
-pub struct PistonResponse {
-    pub run: PistonRun,
+struct Judge0Status {
+    id: u32,
 }
 
-#[derive(Deserialize)]
 pub struct PistonRun {
     pub stdout: String,
     pub stderr: String,
@@ -42,27 +42,44 @@ impl PistonClient {
     }
 
     pub async fn run_python(&self, code: &str, stdin: &str) -> Result<PistonRun> {
-        let url = format!("{}/execute", self.base_url);
-        let body = PistonRequest {
-            language: "python".into(),
-            version: "3.10.0".into(),
-            files: vec![PistonFile {
-                name: "solution.py".into(),
-                content: code.to_string(),
-            }],
+        let url = format!("{}/submissions?wait=true", self.base_url);
+        let body = Judge0Request {
+            language_id: 71, // Python 3
+            source_code: code.to_string(),
             stdin: stdin.to_string(),
         };
 
-        let resp: PistonResponse = self.client
+        let resp: Judge0Response = self.client
             .post(&url)
+            .header("Content-Type", "application/json")
             .json(&body)
-            .timeout(std::time::Duration::from_secs(15))
+            .timeout(std::time::Duration::from_secs(30))
             .send().await
-            .context("piston request failed")?
+            .context("judge0 request failed")?
+            .error_for_status()
+            .context("judge0 returned error status")?
             .json().await
-            .context("piston response parse failed")?;
+            .context("judge0 response parse failed")?;
 
-        Ok(resp.run)
+        // Judge0 status 13 = Internal Error (Judge0's fault, not the code's)
+        if resp.status.id == 13 {
+            anyhow::bail!("judge0 internal error");
+        }
+
+        // Status 3 = Accepted (ran successfully), anything else = failure
+        let code = if resp.status.id == 3 { 0 } else { 1 };
+
+        let stderr = [resp.stderr, resp.compile_output]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(PistonRun {
+            stdout: resp.stdout.unwrap_or_default(),
+            stderr,
+            code,
+        })
     }
 }
 

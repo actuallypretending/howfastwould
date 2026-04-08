@@ -80,10 +80,9 @@ button:not(:disabled):hover,
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.25rem;
   padding: 0.1rem 0.4rem;
-  font-size: 0.8125rem;
+  font-size: 0.9em;
   font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
   color: #e8e8e8;
-  white-space: nowrap;
 }
 
 /* Example blocks */
@@ -94,7 +93,7 @@ button:not(:disabled):hover,
   padding: 1rem 1.25rem;
   margin: 0.75rem 0;
   overflow-x: auto;
-  font-size: 0.8125rem;
+  font-size: 0.9em;
   line-height: 1.8;
   font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }

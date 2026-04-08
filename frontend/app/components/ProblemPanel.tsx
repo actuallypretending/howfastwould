@@ -19,7 +19,17 @@ export default function ProblemPanel({ problem }: Props) {
     try { return JSON.parse(problem.test_cases); } catch { return []; }
   }, [problem.test_cases]);
 
-  const sanitizedHtml = useMemo(() => DOMPurify.sanitize(problem.description), [problem.description]);
+  const sanitizedHtml = useMemo(() => {
+    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+      if (node.tagName === "A") {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener noreferrer");
+      }
+    });
+    const html = DOMPurify.sanitize(problem.description, { ADD_ATTR: ["target"] });
+    DOMPurify.removeHook("afterSanitizeAttributes");
+    return html;
+  }, [problem.description]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden" style={{ borderRight: "1px solid var(--border)" }}>
@@ -72,7 +82,7 @@ export default function ProblemPanel({ problem }: Props) {
                       color: "var(--text)",
                       fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
                       whiteSpace: "pre-wrap",
-                      wordBreak: "break-all",
+                      overflowWrap: "break-word",
                     }}
                   >{tc.input}</pre>
                 </div>
@@ -86,7 +96,7 @@ export default function ProblemPanel({ problem }: Props) {
                         color: "var(--green)",
                         fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
                         whiteSpace: "pre-wrap",
-                        wordBreak: "break-all",
+                        overflowWrap: "break-word",
                       }}
                     >{tc.expected_output}</pre>
                   </div>

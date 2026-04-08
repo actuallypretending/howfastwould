@@ -132,13 +132,20 @@ impl Runner {
     }
 
     async fn call_model(&self, model: &Model, api_key: &str, prompt: &str) -> Result<String> {
+        if api_key.is_empty() {
+            anyhow::bail!("no API key set for {} (env: {})", model.provider, model.api_key_env);
+        }
         let cf_account_id = std::env::var("CF_ACCOUNT_ID").unwrap_or_default();
         let (url, body) = build_api_request(&model.provider, &model.name, api_key, prompt, &cf_account_id)?;
         let auth_value = auth_header_value(&model.provider, api_key);
-        let resp: Value = self.http
+        let mut req = self.http
             .post(&url)
             .header("Content-Type", "application/json")
-            .header(auth_header_name(&model.provider), auth_value)
+            .header(auth_header_name(&model.provider), auth_value);
+        if model.provider == "anthropic" {
+            req = req.header("anthropic-version", "2023-06-01");
+        }
+        let resp: Value = req
             .json(&body)
             .send().await?
             .json().await?;

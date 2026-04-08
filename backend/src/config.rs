@@ -36,7 +36,7 @@ impl Config {
                 .unwrap_or_else(|_| "3001".into())
                 .parse()?,
             piston_url: std::env::var("PISTON_URL")
-                .unwrap_or_else(|_| "https://emkc.org/api/v2/piston".into()),
+                .unwrap_or_else(|_| "https://ce.judge0.com".into()),
             allowed_origins,
             openai_api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
             anthropic_api_key: std::env::var("ANTHROPIC_API_KEY").unwrap_or_default(),

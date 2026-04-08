@@ -76,7 +76,7 @@ pub async fn results(
         .filter(|m| !benchmarked_ids.contains(&m.id))
         .collect();
 
-    if !missing.is_empty() {
+    if !missing.is_empty() && state.config.enable_live_benchmarks {
         // Prevent duplicate spawns: only trigger if no benchmark is already in flight
         // for this problem.
         let already_running = {

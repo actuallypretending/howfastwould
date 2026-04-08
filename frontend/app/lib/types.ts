@@ -23,6 +23,7 @@ export interface Model {
 }
 
 export interface RaceResultWithModel {
+  id: string;
   model_id: string;
   model_name: string;
   display_name: string;
@@ -56,4 +57,29 @@ export interface LeaderboardEntry {
   avg_time_ms: number | null;
   median_time_ms: number | null;
   win_count: number;
+}
+
+export interface TestCaseResult {
+  input: string;
+  expected: string;
+  got: string;
+  passed: boolean;
+}
+
+export interface RunResult {
+  passed: boolean;
+  results: TestCaseResult[];
+  stderr: string;
+}
+
+export interface SubmitResult {
+  passed: boolean;
+  results: TestCaseResult[];
+  submission_id: string | null;
+}
+
+export interface ExecutionDetails {
+  code: string;
+  test_results: TestCaseResult[];
+  stderr: string;
 }

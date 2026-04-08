@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { formatTime } from "@/app/lib/api";
 import { RaceResultWithModel } from "@/app/lib/types";
+import ResultDetail from "./ResultDetail";
 
 interface Props {
   results: RaceResultWithModel[];
@@ -41,7 +42,8 @@ function HumanRow({ results }: { results: RaceResultWithModel[] }) {
 }
 
 export default function RaceResults({ results, userResult, onSelectResult }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const sorted = [...results]
     .filter(r => !r.is_human)
@@ -64,7 +66,7 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
     withUser.splice(idx, 0, { isUser: true, ...userResult });
   }
 
-  const visible = expanded ? withUser : withUser.slice(0, 5);
+  const visible = showAll ? withUser : withUser.slice(0, 5);
   const hasMore = withUser.length > 5;
 
   return (
@@ -110,38 +112,53 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
           const isWinner = displayRank === 1 && r.solved;
 
           return (
-            <button
-              key={r.model_id}
-              className="w-full px-5 py-2.5 border-b text-left result-row"
-              style={{ borderColor: "var(--border)", cursor: "pointer", transition: "background 0.15s ease" }}
-              onClick={() => onSelectResult(r)}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs w-4" style={{ color: "var(--muted)" }}>
-                  {displayRank === 1 ? "🥇" : displayRank === 2 ? "🥈" : displayRank === 3 ? "🥉" : displayRank}
-                </span>
-                <span
-                  className="text-sm font-semibold flex-1 truncate"
-                  style={{ color: isWinner ? "var(--orange)" : "var(--text)" }}
-                >
-                  {r.display_name}
-                </span>
-                <span
-                  className="text-sm font-bold flex-shrink-0"
-                  style={{ color: r.solved ? (isWinner ? "var(--orange)" : "var(--muted)") : "var(--red)" }}
-                >
-                  {r.solved ? formatTime(r.time_ms) : "failed"}
-                </span>
-              </div>
-              <div className="ml-6 h-1.5 rounded overflow-hidden" style={{ background: "#2e2e2e" }}>
-                {r.solved && (
-                  <div
-                    className="h-full rounded"
-                    style={{ width: `${barPct}%`, background: isWinner ? "var(--orange)" : "#5c5c5c" }}
-                  />
-                )}
-              </div>
-            </button>
+            <div key={r.model_id}>
+              <button
+                className="w-full px-5 py-2.5 border-b text-left result-row"
+                style={{ borderColor: "var(--border)", cursor: "pointer", transition: "background 0.15s ease" }}
+                onClick={() => {
+                  setExpandedId(expandedId === r.id ? null : r.id);
+                  onSelectResult(r);
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs w-4" style={{ color: "var(--muted)" }}>
+                    {displayRank === 1 ? "\ud83e\uddc3" : displayRank === 2 ? "\ud83e\uddc2" : displayRank === 3 ? "\ud83e\uddc1" : displayRank}
+                  </span>
+                  <span
+                    className="text-sm font-semibold flex-1 truncate"
+                    style={{ color: isWinner ? "var(--orange)" : "var(--text)" }}
+                  >
+                    {r.display_name}
+                  </span>
+                  <span
+                    className="text-sm font-bold flex-shrink-0"
+                    style={{ color: r.solved ? (isWinner ? "var(--orange)" : "var(--muted)") : "var(--red)" }}
+                  >
+                    {r.solved ? formatTime(r.time_ms) : "failed"}
+                  </span>
+                  <span
+                    className="text-xs flex-shrink-0"
+                    style={{
+                      color: "var(--muted)",
+                      transform: expandedId === r.id ? "rotate(90deg)" : "none",
+                      transition: "transform 0.15s",
+                    }}
+                  >
+                    {"\u25b6"}
+                  </span>
+                </div>
+                <div className="ml-6 h-1.5 rounded overflow-hidden" style={{ background: "#2e2e2e" }}>
+                  {r.solved && (
+                    <div
+                      className="h-full rounded"
+                      style={{ width: `${barPct}%`, background: isWinner ? "var(--orange)" : "#5c5c5c" }}
+                    />
+                  )}
+                </div>
+              </button>
+              {expandedId === r.id && <ResultDetail resultId={r.id} />}
+            </div>
           );
         });
       })()}
@@ -153,9 +170,9 @@ export default function RaceResults({ results, userResult, onSelectResult }: Pro
         <button
           className="w-full py-2 text-xs border-t"
           style={{ color: "var(--muted)", borderColor: "var(--border)" }}
-          onClick={() => setExpanded(e => !e)}
+          onClick={() => setShowAll(s => !s)}
         >
-          {expanded ? "show less ↑" : `show ${withUser.length - 5} more ↓`}
+          {showAll ? "show less ↑" : `show ${withUser.length - 5} more ↓`}
         </button>
       )}
     </div>

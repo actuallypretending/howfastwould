@@ -87,6 +87,9 @@ impl Runner {
         let mut attempts = 0;
         let mut solved = false;
         let mut last_error = String::new();
+        let mut last_code = String::new();
+        let mut last_test_results: Vec<crate::models::TestCaseResult> = Vec::new();
+        let mut last_stderr = String::new();
 
         for attempt in 1..=3 {
             attempts = attempt;
@@ -101,10 +104,23 @@ impl Runner {
                 Err(e) => { last_error = e.to_string(); continue; }
             };
 
-            match self.verify(&code, test_cases).await {
-                Ok(true) => { solved = true; break; }
-                Ok(false) => { last_error = "wrong answer".into(); }
-                Err(e) => { last_error = e.to_string(); }
+            last_code = code.clone();
+
+            match self.verify_with_detail(&code, test_cases).await {
+                Ok((passed, results, stderr)) => {
+                    last_test_results = results;
+                    last_stderr = stderr;
+                    if passed {
+                        solved = true;
+                        break;
+                    } else {
+                        last_error = "wrong answer".into();
+                    }
+                }
+                Err(e) => {
+                    last_error = e.to_string();
+                    last_stderr = e.to_string();
+                }
             }
         }
 
@@ -128,6 +144,9 @@ impl Runner {
             time_ms: if solved { Some(elapsed_ms) } else { None },
             attempts: attempts as i64,
             run_at: Utc::now().to_rfc3339(),
+            last_code,
+            last_test_results: serde_json::to_string(&last_test_results).unwrap_or_default(),
+            last_stderr,
         }
     }
 
@@ -167,6 +186,58 @@ impl Runner {
             }
         }
         Ok(true)
+    }
+
+    /// Like verify(), but returns per-test-case detail instead of just pass/fail.
+    pub async fn verify_with_detail(
+        &self,
+        code: &str,
+        test_cases: &[TestCase],
+    ) -> Result<(bool, Vec<crate::models::TestCaseResult>, String)> {
+        let mut all_passed = true;
+        let mut case_results = Vec::new();
+        let mut last_stderr = String::new();
+
+        if test_cases.is_empty() {
+            return Ok((true, case_results, last_stderr));
+        }
+
+        for tc in test_cases {
+            let wrapped = wrap_solution(code, &tc.input);
+            match self.piston.run_python(&wrapped, &tc.input).await {
+                Ok(run) => {
+                    let got = run.stdout.trim().to_string();
+                    let expected = tc.expected_output.trim().to_string();
+                    let passed = run.code == 0
+                        && (expected.is_empty() || got == expected);
+
+                    if !passed {
+                        all_passed = false;
+                    }
+                    if !run.stderr.is_empty() {
+                        last_stderr = run.stderr.clone();
+                    }
+                    case_results.push(crate::models::TestCaseResult {
+                        input: tc.input.clone(),
+                        expected,
+                        got,
+                        passed,
+                    });
+                }
+                Err(e) => {
+                    all_passed = false;
+                    last_stderr = e.to_string();
+                    case_results.push(crate::models::TestCaseResult {
+                        input: tc.input.clone(),
+                        expected: tc.expected_output.trim().to_string(),
+                        got: String::new(),
+                        passed: false,
+                    });
+                }
+            }
+        }
+
+        Ok((all_passed, case_results, last_stderr))
     }
 
     fn clone_cheap(&self) -> Self {

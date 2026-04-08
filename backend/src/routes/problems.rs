@@ -53,6 +53,7 @@ pub async fn results(
     ).fetch_all(&state.pool).await.unwrap_or_default();
 
     let results: Vec<RaceResultWithModel> = rows.into_iter().map(|r| RaceResultWithModel {
+        id: r.id,
         model_id: r.model_id,
         model_name: r.model_name,
         display_name: r.display_name,
@@ -121,6 +122,20 @@ pub async fn results(
                                 result.id, result.problem_id, result.model_id,
                                 result.solved, result.time_ms, result.attempts, result.run_at
                             ).execute(&pool).await.ok();
+
+                            if !result.last_code.is_empty() {
+                                let detail_id = Uuid::new_v4().to_string();
+                                sqlx::query(
+                                    r#"INSERT INTO execution_details (id, result_id, code, test_results, stderr)
+                                       VALUES ($1, $2, $3, $4, $5)"#,
+                                )
+                                .bind(&detail_id)
+                                .bind(&result.id)
+                                .bind(&result.last_code)
+                                .bind(&result.last_test_results)
+                                .bind(&result.last_stderr)
+                                .execute(&pool).await.ok();
+                            }
                         }
                         in_flight.lock().await.remove(&problem_id);
                     });
@@ -245,6 +260,7 @@ async fn seed_approximate_results(
         ).execute(pool).await.ok();
 
         seeded.push(RaceResultWithModel {
+            id: result_id.clone(),
             model_id: model.id.clone(),
             model_name: model.name.clone(),
             display_name: model.display_name.clone(),

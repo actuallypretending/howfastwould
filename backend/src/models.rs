@@ -53,10 +53,20 @@ pub struct RaceResult {
     pub time_ms: Option<i64>,
     pub attempts: i64,
     pub run_at: String,
+    #[sqlx(skip)]
+    #[serde(skip)]
+    pub last_code: String,
+    #[sqlx(skip)]
+    #[serde(skip)]
+    pub last_test_results: String,
+    #[sqlx(skip)]
+    #[serde(skip)]
+    pub last_stderr: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RaceResultWithModel {
+    pub id: String,
     pub model_id: String,
     pub model_name: String,
     pub display_name: String,
@@ -104,4 +114,68 @@ pub struct LeaderboardEntry {
     pub avg_time_ms: Option<i64>,
     pub median_time_ms: Option<i64>,
     pub win_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestCaseResult {
+    pub input: String,
+    pub expected: String,
+    pub got: String,
+    pub passed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ExecutionDetail {
+    pub id: String,
+    pub result_id: String,
+    pub code: String,
+    pub test_results: String,
+    pub stderr: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Submission {
+    pub id: String,
+    pub problem_id: String,
+    pub ip_hash: String,
+    pub solved: bool,
+    pub time_ms: Option<i64>,
+    pub attempts: i64,
+    pub code: String,
+    pub submitted_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RunCodeRequest {
+    pub code: String,
+    pub problem_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RunCodeResponse {
+    pub passed: bool,
+    pub results: Vec<TestCaseResult>,
+    pub stderr: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubmitCodeRequest {
+    pub code: String,
+    pub problem_id: String,
+    pub time_ms: i64,
+    pub attempts: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SubmitCodeResponse {
+    pub passed: bool,
+    pub results: Vec<TestCaseResult>,
+    pub submission_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ExecutionDetailResponse {
+    pub code: String,
+    pub test_results: Vec<TestCaseResult>,
+    pub stderr: String,
 }

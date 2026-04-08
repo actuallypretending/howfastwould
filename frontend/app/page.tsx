@@ -153,7 +153,11 @@ export default function Home() {
             key={raceKey}
             problem={problem}
             results={results}
-            onSolve={(ms) => setUserResult({ ms, gaveUp: false })}
+            onSolve={async (ms) => {
+              setUserResult({ ms, gaveUp: false });
+              const r = await fetchProblemResults(problem.id);
+              setResults(r);
+            }}
             onGiveUp={(ms) => setUserResult({ ms, gaveUp: true })}
             userResult={userResult}
           />

@@ -154,7 +154,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
                     style={{
                       width: phase === "idle" ? "0%" : `${targetPct}%`,
                       background: solved || isFinished ? "var(--orange)" : "#5c5c5c",
-                      transition: "width 0.1s linear",
+                      transition: solved || isFinished
+                        ? "width 0.1s linear"
+                        : phase === "idle"
+                        ? "none"
+                        : `width ${(ai.time_ms! / 1000).toFixed(2)}s linear`,
                     }}
                   />
                 </div>

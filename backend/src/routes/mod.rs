@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod models;
 pub mod problems;
 pub mod races;
@@ -32,5 +33,6 @@ pub fn router(pool: PgPool, config: Arc<Config>) -> Router {
         .route("/races/:id/stream", get(races::stream))
         .route("/models", get(models::list))
         .route("/leaderboard", get(models::leaderboard))
+        .route("/admin/seed-benchmarks", post(admin::seed_benchmarks))
         .with_state(state)
 }

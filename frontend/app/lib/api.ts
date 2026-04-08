@@ -1,4 +1,4 @@
-import { CreateRaceResponse, Model, Problem, RaceResultWithModel } from "./types";
+import { CreateRaceResponse, LeaderboardEntry, Model, Problem, RaceResultWithModel } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -32,6 +32,12 @@ export async function createRace(problemId: string): Promise<CreateRaceResponse>
 
 export async function fetchModels(): Promise<Model[]> {
   const res = await fetch(`${BASE}/models`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
+  const res = await fetch(`${BASE}/leaderboard`);
   if (!res.ok) return [];
   return res.json();
 }

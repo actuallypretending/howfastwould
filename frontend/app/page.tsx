@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createRace, fetchModels, fetchProblemResults, fetchRandomProblem } from "./lib/api";
 import { Model, Problem, RaceResultWithModel } from "./lib/types";
 import MemeCard from "./components/MemeCard";
@@ -104,8 +105,8 @@ export default function Home() {
         </div>
         <SearchBar onSelect={loadProblem} onRandom={loadRandom} />
         <div className="hidden lg:flex gap-5 text-sm ml-auto" style={{ color: "var(--muted)" }}>
-          <span>Leaderboard</span>
-          <span>About</span>
+          <Link href="/leaderboard" className="nav-link">Leaderboard</Link>
+          <Link href="/about" className="nav-link">About</Link>
         </div>
       </nav>
 

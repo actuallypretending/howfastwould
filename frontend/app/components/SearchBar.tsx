@@ -35,7 +35,7 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
   return (
     <div ref={ref} className="relative flex items-center gap-2 flex-1" style={{ maxWidth: "360px" }}>
       <input
-        className="w-full rounded px-3 py-1.5 text-sm outline-none"
+        className="w-full rounded px-3 py-1.5 text-sm outline-none search-input"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--border)",
@@ -48,8 +48,8 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
       />
       <button
         onClick={onRandom}
-        className="rounded px-3 py-1.5 text-sm flex-shrink-0"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)" }}
+        className="rounded px-3 py-1.5 text-sm flex-shrink-0 dice-btn"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer", transition: "all 0.15s ease" }}
       >
         🎲
       </button>
@@ -62,8 +62,8 @@ export default function SearchBar({ onSelect, onRandom }: Props) {
           {results.map((p) => (
             <button
               key={p.id}
-              className="flex w-full items-center gap-3 px-3 py-2 text-left border-b"
-              style={{ borderColor: "var(--border)" }}
+              className="flex w-full items-center gap-3 px-3 py-2 text-left border-b search-result"
+              style={{ borderColor: "var(--border)", cursor: "pointer", transition: "background 0.15s ease" }}
               onClick={() => { onSelect(p); setOpen(false); setQuery(""); }}
             >
               <span className="text-xs flex-shrink-0" style={{ color: "var(--muted)" }}>#{p.lc_id}</span>

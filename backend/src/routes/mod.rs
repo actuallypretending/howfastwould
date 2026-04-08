@@ -31,5 +31,6 @@ pub fn router(pool: PgPool, config: Arc<Config>) -> Router {
         .route("/races", post(races::create))
         .route("/races/:id/stream", get(races::stream))
         .route("/models", get(models::list))
+        .route("/leaderboard", get(models::leaderboard))
         .with_state(state)
 }

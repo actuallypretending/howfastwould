@@ -118,7 +118,7 @@ impl LeetcodeClient {
 
         // Extract expected outputs from HTML content.
         // Pattern: <strong>Output:</strong> VALUE (up to next closing tag or newline)
-        let re = regex::Regex::new(r#"(?s)<strong>Output:</strong>\s*(.+?)(?:\s*\n|\s*</(?:pre|p|div))"#).unwrap();
+        let re = regex::Regex::new(r#"(?s)<strong>Output:</strong>\s*(.+?)(?:\s*\n|\s*</\w+>)"#).unwrap();
         let strip_tags = regex::Regex::new(r#"<[^>]+>"#).unwrap();
         let outputs: Vec<String> = re.captures_iter(content)
             .filter_map(|cap| cap.get(1).map(|m| {

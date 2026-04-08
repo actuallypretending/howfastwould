@@ -80,6 +80,24 @@ pub async fn create(
                 result.id, result.problem_id, result.model_id, result.solved,
                 result.time_ms, result.attempts, result.run_at
             ).execute(&pool).await.ok();
+
+            if !result.last_code.is_empty() {
+                let detail_id = uuid::Uuid::new_v4().to_string();
+                sqlx::query(
+                    r#"INSERT INTO execution_details (id, result_id, code, test_results, stderr)
+                       VALUES ($1, $2, $3, $4, $5)
+                       ON CONFLICT (result_id) DO UPDATE SET
+                       code = EXCLUDED.code,
+                       test_results = EXCLUDED.test_results,
+                       stderr = EXCLUDED.stderr"#,
+                )
+                .bind(&detail_id)
+                .bind(&result.id)
+                .bind(&result.last_code)
+                .bind(&result.last_test_results)
+                .bind(&result.last_stderr)
+                .execute(&pool).await.ok();
+            }
         }
         let finished = Utc::now().to_rfc3339();
         sqlx::query!(

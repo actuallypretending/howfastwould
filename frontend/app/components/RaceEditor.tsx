@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTimer } from "@/app/hooks/useTimer";
-import { formatTime } from "@/app/lib/api";
-import { Problem, RaceResultWithModel } from "@/app/lib/types";
+import { formatTime, runCode, submitCode, RateLimitError } from "@/app/lib/api";
+import { Problem, RaceResultWithModel, TestCaseResult } from "@/app/lib/types";
+import TestResultsPanel from "./TestResultsPanel";
 import ProblemPanel from "./ProblemPanel";
 
 interface Props {
@@ -48,6 +49,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { state: timerState, elapsedMs, start, stop, reset } = useTimer();
   const [showProblem, setShowProblem] = useState(false);
+  const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
+  const [testStderr, setTestStderr] = useState("");
+  const [runAttempts, setRunAttempts] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
 
   const topAIs = useMemo(() => getTopAIs(results), [results]);
 
@@ -59,6 +65,10 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     reset();
     timeoutRefs.current.forEach(clearTimeout);
     timeoutRefs.current = [];
+    setTestResults([]);
+    setTestStderr("");
+    setRunAttempts(0);
+    setRateLimitCountdown(0);
   }, [problem.id, reset]);
 
   // Clear timeouts on unmount
@@ -84,16 +94,65 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     startRace();
   };
 
-  const handleSubmit = () => {
-    const ms = stop();
-    setPhase("submitted");
-    onSolve(ms);
-  };
-
   const handleGiveUp = () => {
     const ms = stop();
     setPhase("submitted");
     onGiveUp(ms);
+  };
+
+  // Rate limit countdown timer
+  useEffect(() => {
+    if (rateLimitCountdown <= 0) return;
+    const t = setInterval(() => {
+      setRateLimitCountdown((c) => {
+        if (c <= 1) { clearInterval(t); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [rateLimitCountdown]);
+
+  const handleRun = async () => {
+    if (isRunning || rateLimitCountdown > 0) return;
+    startRace();
+    setIsRunning(true);
+    try {
+      const result = await runCode(code, problem.id);
+      setTestResults(result.results);
+      setTestStderr(result.stderr);
+      setRunAttempts((a) => a + 1);
+    } catch (e) {
+      if (e instanceof RateLimitError) {
+        setRateLimitCountdown(e.retryAfter);
+      }
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleRunSubmit = async () => {
+    if (isRunning || rateLimitCountdown > 0) return;
+    setIsRunning(true);
+    try {
+      const ms = stop();
+      setPhase("submitted");
+      const result = await submitCode(code, problem.id, ms, runAttempts + 1);
+      setTestResults(result.results);
+      setTestStderr("");
+      if (result.passed) {
+        onSolve(ms);
+      } else {
+        onGiveUp(ms);
+      }
+    } catch (e) {
+      if (e instanceof RateLimitError) {
+        setRateLimitCountdown(e.retryAfter);
+        setPhase("racing");
+        start();
+      }
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const roastText = getRoastText(phase, solvedIds, topAIs);
@@ -261,19 +320,36 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
       {/* Submit bar */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-t" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <button
-          onClick={handleSubmit}
-          disabled={phase !== "racing"}
+          onClick={handleRun}
+          disabled={phase !== "racing" || isRunning || rateLimitCountdown > 0}
+          className="rounded px-4 py-1.5 text-sm font-bold"
+          style={{
+            background: phase === "racing" && !isRunning ? "#3a3a3a" : "#2a2a2a",
+            color: phase === "racing" && !isRunning ? "var(--text)" : "var(--muted)",
+            cursor: phase === "racing" && !isRunning ? "pointer" : "not-allowed",
+            border: "1px solid #4a4a4a",
+          }}
+        >
+          {isRunning ? "Running\u2026" : "\u25b6 Run"}
+        </button>
+        <button
+          onClick={handleRunSubmit}
+          disabled={phase !== "racing" || isRunning || rateLimitCountdown > 0}
           className="rounded px-5 py-1.5 text-sm font-bold"
           style={{
-            background: phase === "racing" ? "var(--orange)" : "#3a3a3a",
-            color: phase === "racing" ? "#000" : "var(--muted)",
-            cursor: phase === "racing" ? "pointer" : "not-allowed",
+            background: phase === "racing" && !isRunning ? "var(--orange)" : "#3a3a3a",
+            color: phase === "racing" && !isRunning ? "#000" : "var(--muted)",
+            cursor: phase === "racing" && !isRunning ? "pointer" : "not-allowed",
           }}
         >
           Submit
         </button>
         <span className="text-xs italic flex-1" style={{ color: "#555" }}>
-          {phase === "submitted" ? "We told you so." : "We're not going to run it."}
+          {rateLimitCountdown > 0
+            ? `Try again in ${rateLimitCountdown}s`
+            : phase === "submitted"
+            ? "We told you so."
+            : ""}
         </span>
         {phase === "racing" && (
           <button
@@ -285,6 +361,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           </button>
         )}
       </div>
+
+      {/* Test results panel */}
+      {testResults.length > 0 && (
+        <TestResultsPanel results={testResults} stderr={testStderr} />
+      )}
 
       </div>
     </div>

@@ -7,6 +7,14 @@ struct Judge0Request {
     language_id: u32,
     source_code: String,
     stdin: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cpu_time_limit: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    wall_time_limit: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    memory_limit: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable_network: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -47,6 +55,10 @@ impl PistonClient {
             language_id: 71, // Python 3
             source_code: code.to_string(),
             stdin: stdin.to_string(),
+            cpu_time_limit: Some(5.0),
+            wall_time_limit: Some(10.0),
+            memory_limit: Some(128_000),
+            enable_network: Some(false),
         };
 
         let resp: Judge0Response = self.client

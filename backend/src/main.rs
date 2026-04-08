@@ -3,6 +3,7 @@ mod db;
 mod leetcode;
 mod models;
 mod piston;
+mod rate_limit;
 mod roast;
 mod routes;
 mod runner;
@@ -83,6 +84,6 @@ async fn main() -> anyhow::Result<()> {
     let addr = format!("0.0.0.0:{}", cfg.port);
     tracing::info!("listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await?;
     Ok(())
 }

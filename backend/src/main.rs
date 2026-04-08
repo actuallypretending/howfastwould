@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
     }
-    {
+    if cfg.enable_live_benchmarks {
         let pool = pool.clone();
         let cfg = cfg.clone();
         tokio::spawn(async move {
@@ -50,6 +50,8 @@ async fn main() -> anyhow::Result<()> {
                 sync::run_benchmark_batch(&pool, cfg.clone()).await.ok();
             }
         });
+    } else {
+        tracing::info!("live benchmarks disabled (set ENABLE_LIVE_BENCHMARKS=true to enable)");
     }
 
     // Build a CORS layer that is restricted to configured origins in production.

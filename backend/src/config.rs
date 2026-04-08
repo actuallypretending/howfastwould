@@ -17,6 +17,9 @@ pub struct Config {
     pub doubao_api_key: String,
     pub hunyuan_api_key: String,
     pub mistral_api_key: String,
+    /// When false, disables on-demand benchmarks and the periodic benchmark cron.
+    /// Set ENABLE_LIVE_BENCHMARKS=true to enable. Default: false.
+    pub enable_live_benchmarks: bool,
 }
 
 impl Config {
@@ -49,6 +52,9 @@ impl Config {
             doubao_api_key: std::env::var("DOUBAO_API_KEY").unwrap_or_default(),
             hunyuan_api_key: std::env::var("HUNYUAN_API_KEY").unwrap_or_default(),
             mistral_api_key: std::env::var("MISTRAL_API_KEY").unwrap_or_default(),
+            enable_live_benchmarks: std::env::var("ENABLE_LIVE_BENCHMARKS")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         })
     }
 }

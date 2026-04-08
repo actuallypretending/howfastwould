@@ -21,7 +21,7 @@ export default function LeaderboardPage() {
       {/* Nav */}
       <nav
         className="flex items-center gap-4 px-5 shrink-0 border-b"
-        style={{ height: "44px", background: "var(--surface)", borderColor: "var(--border)" }}
+        style={{ height: "2.75rem", background: "var(--surface)", borderColor: "var(--border)" }}
       >
         <Link href="/" className="font-extrabold text-sm whitespace-nowrap" style={{ color: "var(--text)" }}>
           howfast<span style={{ color: "var(--orange)" }}>would</span>.com

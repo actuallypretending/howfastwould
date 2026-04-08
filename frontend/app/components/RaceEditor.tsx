@@ -214,7 +214,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           color: "var(--text)",
           fontFamily: "'Courier New', monospace",
           lineHeight: "1.65",
-          minHeight: "200px",
+          minHeight: "12rem",
         }}
         value={code}
         onChange={handleInput}

@@ -41,6 +41,9 @@ export default function Home() {
     }, 3000);
   }, []);
 
+  const modelsRef = useRef<Model[]>([]);
+  modelsRef.current = models;
+
   const loadProblem = useCallback(async (p: Problem) => {
     setProblem(p);
     setUserResult(null);
@@ -48,12 +51,12 @@ export default function Home() {
     const r = await fetchProblemResults(p.id);
     setResults(r);
     // Auto-poll if results look incomplete (fewer than active non-human models)
-    const activeAICount = models.filter(m => !m.is_human && m.is_active).length;
+    const activeAICount = modelsRef.current.filter(m => !m.is_human && m.is_active).length;
     if (r.length < activeAICount && activeAICount > 0) {
       setIsRacing(true);
       pollForResults(p.id, r.length);
     }
-  }, [pollForResults, models]);
+  }, [pollForResults]);
 
   const loadRandom = useCallback(async () => {
     const p = await fetchRandomProblem();
@@ -61,8 +64,8 @@ export default function Home() {
   }, [loadProblem]);
 
   useEffect(() => {
-    loadRandom();
-    fetchModels().then(setModels);
+    // Fetch models first so loadProblem can check active model count for auto-poll
+    fetchModels().then(setModels).then(loadRandom);
   }, [loadRandom]);
 
   useEffect(() => {

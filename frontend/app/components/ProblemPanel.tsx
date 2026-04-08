@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import DOMPurify from "dompurify";
+import { useMemo, useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { Problem } from "@/app/lib/types";
 
 interface TestCase {
@@ -15,12 +15,11 @@ interface Props {
 export default function ProblemPanel({ problem }: Props) {
   const [tab, setTab] = useState<"description" | "testcases">("description");
 
-  let testCases: TestCase[] = [];
-  try {
-    testCases = JSON.parse(problem.test_cases);
-  } catch {}
+  const testCases = useMemo<TestCase[]>(() => {
+    try { return JSON.parse(problem.test_cases); } catch { return []; }
+  }, [problem.test_cases]);
 
-  const sanitizedHtml = DOMPurify.sanitize(problem.description);
+  const sanitizedHtml = useMemo(() => DOMPurify.sanitize(problem.description), [problem.description]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden" style={{ borderRight: "1px solid var(--border)" }}>

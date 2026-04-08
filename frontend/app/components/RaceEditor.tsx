@@ -166,7 +166,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
           {/* AI rows */}
           {topAIs.map(ai => {
             const solved = solvedIds.has(ai.model_id);
-            const targetPct = scaleRef > 0 ? (ai.time_ms! / scaleRef) * 100 : 0;
+            const targetPct = scaleRef > 0 ? ((ai.time_ms ?? 0) / scaleRef) * 100 : 0;
             const isFinished = phase === "submitted";
             return (
               <div key={ai.model_id} className="flex items-center gap-3">

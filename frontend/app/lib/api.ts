@@ -59,11 +59,11 @@ export class RateLimitError extends Error {
   }
 }
 
-export async function runCode(code: string, problemId: string): Promise<RunResult> {
+export async function runCode(code: string, problemId: string, language: string = "python3"): Promise<RunResult> {
   const res = await fetch(`${BASE}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, problem_id: problemId }),
+    body: JSON.stringify({ code, problem_id: problemId, language }),
   });
   if (res.status === 429) {
     const data = await res.json().catch(() => ({}));
@@ -77,12 +77,13 @@ export async function submitCode(
   code: string,
   problemId: string,
   timeMs: number,
-  attempts: number
+  attempts: number,
+  language: string = "python3"
 ): Promise<SubmitResult> {
   const res = await fetch(`${BASE}/submit`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, problem_id: problemId, time_ms: timeMs, attempts }),
+    body: JSON.stringify({ code, problem_id: problemId, time_ms: timeMs, attempts, language }),
   });
   if (res.status === 429) {
     const data = await res.json().catch(() => ({}));

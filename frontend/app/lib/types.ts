@@ -4,7 +4,7 @@ export interface Problem {
   title: string;
   difficulty: "Easy" | "Medium" | "Hard";
   description: string;
-  starter_code: string;
+  starter_code: Record<string, string>;
   test_cases: string;
   source: string;
   cached_at: string;

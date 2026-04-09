@@ -19,6 +19,13 @@ use crate::{
 
 const MAX_CODE_SIZE: usize = 50_000;
 
+fn validated_language(lang: Option<&str>) -> Result<&str, Response> {
+    match lang.unwrap_or("python3") {
+        l @ ("python3" | "javascript") => Ok(l),
+        _ => Err(StatusCode::BAD_REQUEST.into_response()),
+    }
+}
+
 fn rate_limit_response(retry_after: u64) -> Response {
     (
         StatusCode::TOO_MANY_REQUESTS,
@@ -42,11 +49,15 @@ pub async fn run_code(
         return StatusCode::BAD_REQUEST.into_response();
     }
 
-    let problem = match sqlx::query_as!(
-        Problem,
+    let language = match validated_language(body.language.as_deref()) {
+        Ok(l) => l,
+        Err(r) => return r,
+    };
+
+    let problem = match sqlx::query_as::<_, Problem>(
         "SELECT * FROM problems WHERE id = $1",
-        body.problem_id
     )
+    .bind(&body.problem_id)
     .fetch_optional(&state.pool)
     .await
     {
@@ -60,7 +71,7 @@ pub async fn run_code(
 
     let (passed, results, stderr) = match state
         .runner
-        .verify_with_detail(&body.code, &test_cases)
+        .verify_with_detail(&body.code, &test_cases, language)
         .await
     {
         Ok(r) => r,
@@ -98,11 +109,15 @@ pub async fn submit_code(
         return StatusCode::BAD_REQUEST.into_response();
     }
 
-    let problem = match sqlx::query_as!(
-        Problem,
+    let language = match validated_language(body.language.as_deref()) {
+        Ok(l) => l,
+        Err(r) => return r,
+    };
+
+    let problem = match sqlx::query_as::<_, Problem>(
         "SELECT * FROM problems WHERE id = $1",
-        body.problem_id
     )
+    .bind(&body.problem_id)
     .fetch_optional(&state.pool)
     .await
     {
@@ -116,7 +131,7 @@ pub async fn submit_code(
 
     let (passed, results, _stderr) = match state
         .runner
-        .verify_with_detail(&body.code, &test_cases)
+        .verify_with_detail(&body.code, &test_cases, language)
         .await
     {
         Ok(r) => r,
@@ -131,8 +146,8 @@ pub async fn submit_code(
         let now = Utc::now().to_rfc3339();
 
         if sqlx::query(
-            r#"INSERT INTO submissions (id, problem_id, ip_hash, solved, time_ms, attempts, code, submitted_at)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+            r#"INSERT INTO submissions (id, problem_id, ip_hash, solved, time_ms, attempts, code, language, submitted_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"#,
         )
         .bind(&id)
         .bind(&body.problem_id)
@@ -141,6 +156,7 @@ pub async fn submit_code(
         .bind(body.time_ms)
         .bind(body.attempts)
         .bind(&body.code)
+        .bind(language)
         .bind(&now)
         .execute(&state.pool)
         .await

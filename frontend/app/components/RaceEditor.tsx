@@ -43,9 +43,15 @@ function getRoastText(
 }
 
 export default function RaceEditor({ problem, results, onSolve, onGiveUp, userResult }: Props) {
+  const getStarter = (lang: string) => {
+    const codes = problem.starter_code ?? {};
+    return codes[lang] ?? "";
+  };
+
   const [phase, setPhase] = useState<RacePhase>("idle");
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
-  const [code, setCode] = useState(problem.starter_code ?? "");
+  const [language, setLanguage] = useState<string>("python3");
+  const [code, setCode] = useState(() => getStarter("python3"));
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { state: timerState, elapsedMs, start, stop, reset } = useTimer();
   const [showProblem, setShowProblem] = useState(false);
@@ -61,7 +67,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   useEffect(() => {
     setPhase("idle");
     setSolvedIds(new Set());
-    setCode(problem.starter_code ?? "");
+    setCode(getStarter(language));
     reset();
     timeoutRefs.current.forEach(clearTimeout);
     timeoutRefs.current = [];
@@ -94,6 +100,15 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     startRace();
   };
 
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    const oldStarter = getStarter(language);
+    setLanguage(newLang);
+    if (code === oldStarter || code === "") {
+      setCode(getStarter(newLang));
+    }
+  };
+
   const handleGiveUp = () => {
     const ms = stop();
     setPhase("submitted");
@@ -117,7 +132,7 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     startRace();
     setIsRunning(true);
     try {
-      const result = await runCode(code, problem.id);
+      const result = await runCode(code, problem.id, language);
       setTestResults(result.results);
       setTestStderr(result.stderr);
       setRunAttempts((a) => a + 1);
@@ -133,10 +148,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const handleRunSubmit = async () => {
     if (isRunning || rateLimitCountdown > 0) return;
     setIsRunning(true);
+    const ms = elapsedMs;
     try {
-      const ms = stop();
+      const result = await submitCode(code, problem.id, ms, runAttempts + 1, language);
+      stop();
       setPhase("submitted");
-      const result = await submitCode(code, problem.id, ms, runAttempts + 1);
       setTestResults(result.results);
       setTestStderr("");
       if (result.passed) {
@@ -147,8 +163,6 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     } catch (e) {
       if (e instanceof RateLimitError) {
         setRateLimitCountdown(e.retryAfter);
-        setPhase("racing");
-        start();
       }
     } finally {
       setIsRunning(false);
@@ -280,12 +294,12 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
         <select
           className="text-xs rounded px-2 py-1"
           style={{ background: "#3a3a3a", border: "1px solid #4a4a4a", color: "var(--text)" }}
+          value={language}
+          onChange={handleLanguageChange}
+          disabled={phase === "submitted"}
         >
-          <option>Python 3</option>
-          <option>JavaScript</option>
-          <option>TypeScript</option>
-          <option>Java</option>
-          <option>C++</option>
+          <option value="python3">Python 3</option>
+          <option value="javascript">JavaScript</option>
         </select>
         <button
           onClick={() => setShowProblem(true)}

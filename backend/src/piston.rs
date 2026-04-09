@@ -147,19 +147,29 @@ console.log(JSON.stringify(result));
 }
 
 fn extract_js_function_name(code: &str) -> Option<String> {
-    // Match: var/let/const name = function(
-    let re1 = regex::Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*function").ok()?;
-    if let Some(cap) = re1.captures(code) {
+    use std::sync::LazyLock;
+    use regex::Regex;
+
+    // var/let/const name = function(
+    static RE_VAR_FN: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*function").unwrap()
+    });
+    // function name(
+    static RE_FN_DECL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"function\s+(\w+)\s*\(").unwrap()
+    });
+    // var/let/const name = (...) =>
+    static RE_ARROW: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*\(").unwrap()
+    });
+
+    if let Some(cap) = RE_VAR_FN.captures(code) {
         return Some(cap[1].to_string());
     }
-    // Match: function name(
-    let re2 = regex::Regex::new(r"function\s+(\w+)\s*\(").ok()?;
-    if let Some(cap) = re2.captures(code) {
+    if let Some(cap) = RE_FN_DECL.captures(code) {
         return Some(cap[1].to_string());
     }
-    // Match: var/let/const name = (...) =>
-    let re3 = regex::Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*\(").ok()?;
-    if let Some(cap) = re3.captures(code) {
+    if let Some(cap) = RE_ARROW.captures(code) {
         return Some(cap[1].to_string());
     }
     None

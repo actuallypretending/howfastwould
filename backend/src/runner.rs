@@ -176,22 +176,6 @@ impl Runner {
         extract_code(&resp, &model.provider)
     }
 
-    async fn verify(&self, code: &str, test_cases: &[TestCase], language: &str) -> Result<bool> {
-        if test_cases.is_empty() {
-            return Ok(true);
-        }
-        for tc in test_cases {
-            let wrapped = wrap_solution(language, code, &tc.input);
-            let run = self.piston.run(language, &wrapped, &tc.input).await?;
-            if run.code != 0 { return Ok(false); }
-            if !tc.expected_output.is_empty() {
-                let got = run.stdout.trim();
-                let want = tc.expected_output.trim();
-                if got != want { return Ok(false); }
-            }
-        }
-        Ok(true)
-    }
 
     /// Like verify(), but returns per-test-case detail instead of just pass/fail.
     pub async fn verify_with_detail(

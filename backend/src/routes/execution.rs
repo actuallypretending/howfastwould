@@ -54,11 +54,10 @@ pub async fn run_code(
         Err(r) => return r,
     };
 
-    let problem = match sqlx::query_as!(
-        Problem,
+    let problem = match sqlx::query_as::<_, Problem>(
         "SELECT * FROM problems WHERE id = $1",
-        body.problem_id
     )
+    .bind(&body.problem_id)
     .fetch_optional(&state.pool)
     .await
     {
@@ -115,11 +114,10 @@ pub async fn submit_code(
         Err(r) => return r,
     };
 
-    let problem = match sqlx::query_as!(
-        Problem,
+    let problem = match sqlx::query_as::<_, Problem>(
         "SELECT * FROM problems WHERE id = $1",
-        body.problem_id
     )
+    .bind(&body.problem_id)
     .fetch_optional(&state.pool)
     .await
     {

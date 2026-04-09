@@ -90,11 +90,11 @@ pub async fn results(
             };
 
             if !already_running {
-                let problem_opt = sqlx::query_as!(
-                    crate::models::Problem,
+                let problem_opt = sqlx::query_as::<_, crate::models::Problem>(
                     "SELECT * FROM problems WHERE id = $1",
-                    id
-                ).fetch_optional(&state.pool).await.unwrap_or(None);
+                )
+                .bind(&id)
+                .fetch_optional(&state.pool).await.unwrap_or(None);
 
                 if let Some(problem) = problem_opt {
                     let runner = state.runner.clone();

@@ -41,11 +41,11 @@ pub async fn create(
 
     let race_id = Uuid::new_v4().to_string();
 
-    let problem = sqlx::query_as!(
-        crate::models::Problem,
+    let problem = sqlx::query_as::<_, crate::models::Problem>(
         "SELECT * FROM problems WHERE id = $1",
-        body.problem_id
-    ).fetch_optional(&state.pool).await
+    )
+    .bind(&body.problem_id)
+    .fetch_optional(&state.pool).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 

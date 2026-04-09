@@ -86,12 +86,22 @@ impl LeetcodeClient {
         let difficulty = q["difficulty"].as_str().context("missing difficulty")?.to_string();
         let description = q["content"].as_str().unwrap_or("").to_string();
 
-        let starter_code = q["codeSnippets"]
-            .as_array()
+        let snippets = q["codeSnippets"].as_array();
+
+        let python_code = snippets
             .and_then(|snips| snips.iter().find(|s| s["langSlug"] == "python3"))
             .and_then(|s| s["code"].as_str())
-            .unwrap_or("class Solution:\n    pass")
-            .to_string();
+            .unwrap_or("class Solution:\n    pass");
+
+        let js_code = snippets
+            .and_then(|snips| snips.iter().find(|s| s["langSlug"] == "javascript"))
+            .and_then(|s| s["code"].as_str())
+            .unwrap_or("// Write your solution here\n");
+
+        let starter_code = serde_json::json!({
+            "python3": python_code,
+            "javascript": js_code,
+        });
 
         let test_cases = self.parse_test_cases(&q["exampleTestcaseList"], &description);
 
@@ -134,22 +144,29 @@ impl LeetcodeClient {
 }
 
 pub async fn cache_problem(pool: &sqlx::PgPool, problem: &Problem) -> Result<()> {
-    sqlx::query!(
+    sqlx::query(
         r#"INSERT INTO problems
            (id, lc_id, title, difficulty, description, starter_code, test_cases, source, cached_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            ON CONFLICT (id) DO UPDATE SET
            lc_id=$2, title=$3, difficulty=$4, description=$5,
            starter_code=$6, test_cases=$7, source=$8, cached_at=$9"#,
-        problem.id, problem.lc_id, problem.title, problem.difficulty,
-        problem.description, problem.starter_code, problem.test_cases,
-        problem.source, problem.cached_at
-    ).execute(pool).await?;
+    )
+    .bind(&problem.id)
+    .bind(problem.lc_id)
+    .bind(&problem.title)
+    .bind(&problem.difficulty)
+    .bind(&problem.description)
+    .bind(&problem.starter_code)
+    .bind(&problem.test_cases)
+    .bind(&problem.source)
+    .bind(&problem.cached_at)
+    .execute(pool).await?;
     Ok(())
 }
 
 pub async fn get_random_cached(pool: &sqlx::PgPool) -> Result<Problem> {
-    sqlx::query_as!(Problem,
+    sqlx::query_as::<_, Problem>(
         "SELECT * FROM problems ORDER BY RANDOM() LIMIT 1"
     ).fetch_one(pool).await.context("no cached problems")
 }
@@ -157,10 +174,13 @@ pub async fn get_random_cached(pool: &sqlx::PgPool) -> Result<Problem> {
 pub async fn search_problems(pool: &sqlx::PgPool, q: &str) -> Result<Vec<Problem>> {
     let escaped = q.replace('%', "\\%").replace('_', "\\_");
     let pattern = format!("%{}%", escaped);
-    sqlx::query_as!(Problem,
+    sqlx::query_as::<_, Problem>(
         r#"SELECT * FROM problems
            WHERE title LIKE $1 OR CAST(lc_id AS TEXT) = $2 OR difficulty = $3
            LIMIT 20"#,
-        pattern, q, q
-    ).fetch_all(pool).await.context("search failed")
+    )
+    .bind(&pattern)
+    .bind(q)
+    .bind(q)
+    .fetch_all(pool).await.context("search failed")
 }

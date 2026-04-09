@@ -133,10 +133,11 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
   const handleRunSubmit = async () => {
     if (isRunning || rateLimitCountdown > 0) return;
     setIsRunning(true);
+    const ms = elapsedMs;
     try {
-      const ms = stop();
-      setPhase("submitted");
       const result = await submitCode(code, problem.id, ms, runAttempts + 1);
+      stop();
+      setPhase("submitted");
       setTestResults(result.results);
       setTestStderr("");
       if (result.passed) {
@@ -147,8 +148,6 @@ export default function RaceEditor({ problem, results, onSolve, onGiveUp, userRe
     } catch (e) {
       if (e instanceof RateLimitError) {
         setRateLimitCountdown(e.retryAfter);
-        setPhase("racing");
-        start();
       }
     } finally {
       setIsRunning(false);

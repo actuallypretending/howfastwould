@@ -91,12 +91,17 @@ impl Runner {
         let mut last_test_results: Vec<crate::models::TestCaseResult> = Vec::new();
         let mut last_stderr = String::new();
 
+        let starter = problem.starter_code
+            .get("python3")
+            .and_then(|v| v.as_str())
+            .unwrap_or("class Solution:\n    pass");
+
         for attempt in 1..=3 {
             attempts = attempt;
             let prompt = if attempt == 1 {
-                build_prompt(&problem.title, &problem.description, &problem.starter_code)
+                build_prompt(&problem.title, &problem.description, starter)
             } else {
-                build_retry_prompt(&problem.title, &problem.description, &problem.starter_code, &last_error)
+                build_retry_prompt(&problem.title, &problem.description, starter, &last_error)
             };
 
             let code = match self.call_model(model, &api_key, &prompt).await {
@@ -106,7 +111,7 @@ impl Runner {
 
             last_code = code.clone();
 
-            match self.verify_with_detail(&code, test_cases).await {
+            match self.verify_with_detail(&code, test_cases, "python3").await {
                 Ok((passed, results, stderr)) => {
                     last_test_results = results;
                     last_stderr = stderr;
@@ -171,13 +176,13 @@ impl Runner {
         extract_code(&resp, &model.provider)
     }
 
-    async fn verify(&self, code: &str, test_cases: &[TestCase]) -> Result<bool> {
+    async fn verify(&self, code: &str, test_cases: &[TestCase], language: &str) -> Result<bool> {
         if test_cases.is_empty() {
             return Ok(true);
         }
         for tc in test_cases {
-            let wrapped = wrap_solution(code, &tc.input);
-            let run = self.piston.run_python(&wrapped, &tc.input).await?;
+            let wrapped = wrap_solution(language, code, &tc.input);
+            let run = self.piston.run(language, &wrapped, &tc.input).await?;
             if run.code != 0 { return Ok(false); }
             if !tc.expected_output.is_empty() {
                 let got = run.stdout.trim();
@@ -193,6 +198,7 @@ impl Runner {
         &self,
         code: &str,
         test_cases: &[TestCase],
+        language: &str,
     ) -> Result<(bool, Vec<crate::models::TestCaseResult>, String)> {
         let mut all_passed = true;
         let mut case_results = Vec::new();
@@ -203,8 +209,8 @@ impl Runner {
         }
 
         for tc in test_cases {
-            let wrapped = wrap_solution(code, &tc.input);
-            match self.piston.run_python(&wrapped, &tc.input).await {
+            let wrapped = wrap_solution(language, code, &tc.input);
+            match self.piston.run(language, &wrapped, &tc.input).await {
                 Ok(run) => {
                     let got = run.stdout.trim().to_string();
                     let expected = tc.expected_output.trim().to_string();

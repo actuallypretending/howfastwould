@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Problem {
@@ -7,7 +8,7 @@ pub struct Problem {
     pub title: String,
     pub difficulty: String,
     pub description: String,
-    pub starter_code: String,
+    pub starter_code: Value,
     pub test_cases: String,
     pub source: String,
     pub cached_at: String,
@@ -149,6 +150,7 @@ pub struct Submission {
 pub struct RunCodeRequest {
     pub code: String,
     pub problem_id: String,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -164,6 +166,7 @@ pub struct SubmitCodeRequest {
     pub problem_id: String,
     pub time_ms: i64,
     pub attempts: i64,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

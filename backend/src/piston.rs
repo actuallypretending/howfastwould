@@ -41,6 +41,14 @@ pub struct PistonClient {
     base_url: String,
 }
 
+fn language_id(language: &str) -> Result<u32> {
+    match language {
+        "python3" => Ok(71),
+        "javascript" => Ok(63),
+        _ => anyhow::bail!("unsupported language: {}", language),
+    }
+}
+
 impl PistonClient {
     pub fn new(base_url: &str) -> Self {
         Self {
@@ -49,10 +57,11 @@ impl PistonClient {
         }
     }
 
-    pub async fn run_python(&self, code: &str, stdin: &str) -> Result<PistonRun> {
+    pub async fn run(&self, language: &str, code: &str, stdin: &str) -> Result<PistonRun> {
+        let lang_id = language_id(language)?;
         let url = format!("{}/submissions?wait=true", self.base_url);
         let body = Judge0Request {
-            language_id: 71, // Python 3
+            language_id: lang_id,
             source_code: code.to_string(),
             stdin: stdin.to_string(),
             cpu_time_limit: Some(5.0),
@@ -95,7 +104,15 @@ impl PistonClient {
     }
 }
 
-pub fn wrap_solution(solution_code: &str, _input: &str) -> String {
+/// Dispatch to the correct language wrapper.
+pub fn wrap_solution(language: &str, code: &str, input: &str) -> String {
+    match language {
+        "javascript" => wrap_solution_js(code),
+        _ => wrap_solution_py(code, input),
+    }
+}
+
+fn wrap_solution_py(solution_code: &str, _input: &str) -> String {
     format!(r#"
 import json, sys
 
@@ -114,4 +131,36 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"ERROR: {{e}}", file=sys.stderr)
 "#, solution_code = solution_code)
+}
+
+fn wrap_solution_js(code: &str) -> String {
+    let fn_name = extract_js_function_name(code).unwrap_or_else(|| "solution".to_string());
+
+    format!(r#"
+{code}
+
+const lines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const args = lines.filter(l => l.trim()).map(JSON.parse);
+const result = {fn_name}(...args);
+console.log(JSON.stringify(result));
+"#, code = code, fn_name = fn_name)
+}
+
+fn extract_js_function_name(code: &str) -> Option<String> {
+    // Match: var/let/const name = function(
+    let re1 = regex::Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*function").ok()?;
+    if let Some(cap) = re1.captures(code) {
+        return Some(cap[1].to_string());
+    }
+    // Match: function name(
+    let re2 = regex::Regex::new(r"function\s+(\w+)\s*\(").ok()?;
+    if let Some(cap) = re2.captures(code) {
+        return Some(cap[1].to_string());
+    }
+    // Match: var/let/const name = (...) =>
+    let re3 = regex::Regex::new(r"(?:var|let|const)\s+(\w+)\s*=\s*\(").ok()?;
+    if let Some(cap) = re3.captures(code) {
+        return Some(cap[1].to_string());
+    }
+    None
 }
